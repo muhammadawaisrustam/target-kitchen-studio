@@ -1,0 +1,47 @@
+import { NextResponse } from "next/server";
+import { EnquiryInputSchema, fieldErrors } from "@/lib/enquiries/schema";
+import { loadCatalogue } from "@/lib/server/catalogueRepository";
+import { getEnquiryStore, StorageUnavailableError } from "@/lib/server/enquiryStore";
+import { buildEnquiry, EnquiryRejectedError } from "@/lib/server/enquiries";
+import { clientIp, rateLimit } from "@/lib/server/rateLimit";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+/**
+ * POST /api/enquiries: stores a quotation request.
+ * Responds 201 with the reference only after the store has confirmed the record was saved.
+ */
+export async function POST(request: Request) {
+  const limited = rateLimit(`enquiry:${clientIp(request)}`, 5, 10 * 60_000);
+  if (!limited.ok)
+    return NextResponse.json({ error: `Too many requests. Please try again in ${Math.ceil(limited.retryAfterSec / 60)} minute(s).` }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } });
+
+  const text = await request.text();
+  if (text.length > 20_000) return NextResponse.json({ error: "The request is too large." }, { status: 413 });
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return NextResponse.json({ error: "The request could not be read." }, { status: 400 });
+  }
+  const parsed = EnquiryInputSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "Please check the highlighted fields.", fields: fieldErrors(parsed.error) }, { status: 422 });
+  // Hidden field filled in: treat as spam, store nothing, and do not claim success.
+  if (parsed.data.website) return NextResponse.json({ error: "The enquiry could not be accepted." }, { status: 400 });
+
+  try {
+    const { products } = await loadCatalogue();
+    const enquiry = buildEnquiry(parsed.data, products);
+    const saved = await getEnquiryStore().create(enquiry);
+    return NextResponse.json({ reference: saved.reference, createdAt: saved.createdAt }, { status: 201 });
+  } catch (err) {
+    if (err instanceof EnquiryRejectedError) return NextResponse.json({ error: err.message, fields: { design: err.message } }, { status: 422 });
+    if (err instanceof StorageUnavailableError) {
+      console.error("[enquiries] storage failed", err.message, err.cause);
+      return NextResponse.json({ error: "Your enquiry could not be saved right now, so it was not sent. Please try again later or contact us directly." }, { status: 503 });
+    }
+    console.error("[enquiries] unexpected error", err);
+    return NextResponse.json({ error: "Something went wrong, so your enquiry was not sent. Please try again." }, { status: 500 });
+  }
+}

@@ -2,121 +2,121 @@
   {
     "name": "T1 real 3D kitchen renders (WebGL scene with geometry)",
     "ok": true,
-    "ms": 4,
-    "detail": "WebGL2, 142 meshes, regions lower_cabinets/tall_cabinets/upper_cabinets/open_shelves/island_panels, ready in 2617 ms"
+    "ms": 10,
+    "detail": "WebGL2, 142 meshes, regions lower_cabinets/tall_cabinets/upper_cabinets/open_shelves/island_panels, ready in 2703 ms"
   },
   {
     "name": "T2a drag rotates the camera",
     "ok": true,
-    "ms": 1209,
-    "detail": "alpha -1.05 -> -1.81, beta 1.18 -> 1.03"
+    "ms": 1345,
+    "detail": "alpha -1.05 -> -1.75, beta 1.18 -> 1.04"
   },
   {
     "name": "T2b mouse wheel zooms",
     "ok": true,
-    "ms": 3778,
-    "detail": "radius 4.70 -> 2.88"
+    "ms": 3678,
+    "detail": "radius 4.70 -> 3.06"
   },
   {
     "name": "T2c right-drag pans",
     "ok": true,
-    "ms": 2242,
-    "detail": "target moved 0.49 m"
+    "ms": 2215,
+    "detail": "target moved 0.52 m"
   },
   {
     "name": "T2d zoom buttons and preset views",
     "ok": true,
-    "ms": 12678,
-    "detail": "zoom 2.62 -> 3.26 -> 2.61; front alpha -1.57"
+    "ms": 14459,
+    "detail": "zoom 2.64 -> 3.28 -> 2.64; front alpha -1.57"
   },
   {
     "name": "T2f arrow keys rotate when the canvas has focus",
     "ok": true,
-    "ms": 1326,
-    "detail": "alpha -1.57 -> -2.70"
+    "ms": 1329,
+    "detail": "alpha -1.57 -> -3.16"
   },
   {
     "name": "T2e reset view restores the default camera",
     "ok": true,
-    "ms": 1170,
+    "ms": 1185,
     "detail": "matches registry default"
   },
   {
     "name": "T3 search by panel code and by name",
     "ok": true,
-    "ms": 1582,
+    "ms": 1252,
     "detail": "code, name and empty-result states work"
   },
   {
     "name": "T3b category filter",
     "ok": true,
-    "ms": 93,
+    "ms": 252,
     "detail": "Unicolour -> 8 panels"
   },
   {
     "name": "T4 selecting a panel changes only the selected region",
     "ok": true,
-    "ms": 9368,
+    "ms": 12022,
     "detail": "upper #F2F1EC/colour -> panel:/demo-assets/textures/DEMO-WD-004.jpg; 7 meshes"
   },
   {
     "name": "T5 second panel on another region keeps the first",
     "ok": true,
-    "ms": 6240,
+    "ms": 6736,
     "detail": "upper=WD-004, tall=UC-106 (colour #8C9A84), lower=ST-201"
   },
   {
     "name": "T6 design summary shows the correct panel codes",
     "ok": true,
-    "ms": 7,
+    "ms": 15,
     "detail": "region cards match scene"
   },
   {
     "name": "T10 missing texture shows a warning, scene keeps running",
     "ok": true,
-    "ms": 1866,
+    "ms": 3252,
     "detail": "warning: \"The texture for DEMO-TEST-404 (Demo Missing-Texture Test Panel) could not be loa…\""
   },
   {
     "name": "Click on a cabinet in 3D selects its region",
     "ok": true,
-    "ms": 2269,
+    "ms": 2652,
     "detail": "tapping a tall unit activated 'Tall units'"
   },
   {
     "name": "T14 demo data is labelled as demonstration",
     "ok": true,
-    "ms": 11,
+    "ms": 18,
     "detail": "21 cards, all DEMO-coded; disclaimer present"
   },
   {
     "name": "Reset design restores default panels",
     "ok": true,
-    "ms": 940,
+    "ms": 906,
     "detail": "upper back to DEMO-UC-101"
   },
   {
     "name": "Second kitchen layout loads from the registry",
     "ok": true,
-    "ms": 4933,
+    "ms": 5481,
     "detail": "straight kitchen: 4 regions; switched back OK"
   },
   {
     "name": "No uncaught page errors on desktop",
     "ok": true,
-    "ms": 1,
+    "ms": 0,
     "detail": "1 expected 404 log(s) from the missing-texture test"
   },
   {
     "name": "Performance snapshot (SwiftShader, no GPU)",
     "ok": true,
-    "ms": 36,
-    "detail": "avg frame 1.4 ms in software GL, JS heap 28 MB, textures cached 4"
+    "ms": 67,
+    "detail": "avg frame 5.2 ms in software GL, JS heap 32 MB, textures cached 4"
   },
   {
     "name": "T12 usable on a phone-sized screen (390x844, touch)",
     "ok": true,
-    "ms": 24712,
+    "ms": 26870,
     "detail": "no horizontal overflow; tap select works; touch drag alpha -1.05 -> -1.50"
   }
 ]

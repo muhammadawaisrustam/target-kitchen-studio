@@ -32,3 +32,25 @@ canvas:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    max-height: none !important;
+    box-shadow: none !important;
+  }
+  .print-area .overflow-y-auto {
+    overflow: visible !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

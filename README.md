@@ -24,8 +24,12 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 - PDF importer for brand catalogues laid out like the Kastamonu profile (see "Importing a brand PDF").
 - Responsive layout for desktop, tablet and phone.
 - Render-on-demand: the GPU stops drawing about 1.5 s after the last interaction.
+- **Saved designs with variants** (Designs button): name a design, add variants (each a full set of panel choices, layout and camera view), switch between them, rename, delete. If a variant has unsaved changes, switching asks first. Designs are kept in the browser (see "Where data is stored").
+- **Summary & share**: a product-code summary per region (Item ID, decor, brand, board, finish, sheet size), a side-by-side comparison of saved variants, copy as text, CSV download, print, and a share link that reopens the exact design on any device.
+- **Request a quote**: a form (name, phone or email, optional company, area, preferred contact, notes, consent). The server re-checks every panel code against the catalogue, stores the enquiry and returns a reference such as `ENQ-20261024-VU9CAQ`. The success screen only appears after the server confirms the enquiry was saved; any failure shows an error and keeps the form filled in. No prices are shown.
+- **Admin** (`/admin`, off unless `ADMIN_PASSWORD` is set): list enquiries with their panel codes, open the customer's design, set status (new, contacted, quote sent, closed), add internal notes, export CSV. Products: see every catalogue source, import products from CSV or JSON (checked first, files with errors are refused), remove an import.
 
-Not built yet, on purpose (deferred by the project owner): saved designs, compare, share links, quotation requests, admin screens. No buttons for these exist in the UI.
+Not built yet: email notification when an enquiry arrives (needs an email service and credentials), individual staff accounts, uploading new texture images from the admin page, and 3D side-by-side comparison.
 
 ## Run it locally
 
@@ -44,6 +48,9 @@ npm run build && npm start   # production build
 npm test             # unit tests (Node's built-in test runner)
 npm run build && npm start   # in one terminal
 npm run test:e2e:brands   # browser checks on the real brand data (default server)
+# designs, sharing, quotes and admin (server started with ADMIN_PASSWORD and DATA_DIR):
+ADMIN_PASSWORD=some-long-test-password DATA_DIR=/tmp/tks-e2e npm start
+E2E_DATA_DIR=/tmp/tks-e2e ADMIN_PASSWORD=some-long-test-password npm run test:e2e:stage3
 CATALOGUE_FILE=data/demo-catalogue.json npm start   # demo data, then:
 npm run test:e2e     # browser checks against the DEMO catalogue (set BASE_URL to change)
 ```
@@ -55,8 +62,9 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | Check | Result |
 | --- | --- |
 | Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
+| Browser checks, designs/sharing/quotes/admin (save and reload a design, variants and the unsaved-changes prompt, summary and variant comparison, CSV, share link in a fresh browser with the same codes and camera, unknown code in a link reported and not substituted, quote validation, server error and network error never show success, stored enquiry has server-checked panel details, unknown codes and spam rejected, admin locked without sign-in, wrong password refused, password not in page scripts, status change saved, cross-site change refused, CSV export, import blocked on errors, clean import goes live and is removed, admin off without a password, phone layout) | 18/18 pass |
 | Browser checks, DEMO catalogue | 20/20 pass |
-| Unit tests: catalogue validation, CSV import, 600-record query, material mapping, mesh-to-region mapping, UV projection, brand files (codes unique, every image file exists, every product traceable to a PDF page) | 17/17 pass |
+| Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import | 32/32 pass |
 | T1 3D kitchen renders (142 meshes, 5 regions) | pass |
 | T2 rotate (drag and arrow keys), zoom (wheel and buttons), pan (right-drag), preset views, reset view | pass |
 | T3 search by code and by name, empty state, category filter | pass |
@@ -67,6 +75,8 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | T12 phone 390×844: no horizontal scroll, tap select, one-finger touch rotate | pass |
 | T14 every product is DEMO-coded and the disclaimer is shown | pass |
 | Click a cabinet in 3D selects its region; reset design; switching layouts; no page errors | pass |
+
+The Supabase path is tested only against a stand-in server in the unit tests, not a real Supabase project (none has been connected).
 
 Not verified: real phones and tablets with GPUs (only emulated touch in Chromium), Safari and Firefox, and frame rate on real hardware. In software rendering a frame took about 2 to 4 ms; the 3D engine bundle is about 290 KB gzipped and loads after the page.
 
@@ -84,14 +94,19 @@ scripts/
   import-brand-pdf.mjs         brand PDF -> catalogue JSON, textures, thumbnails, report
   e2e.mjs                      browser acceptance checks (DEMO data)
   e2e-brands.mjs               browser checks on real brand data
+  e2e-stage3.mjs               browser checks for designs, sharing, quotes and admin
+supabase/schema.sql        optional table for storing enquiries in Supabase
 src/
   app/                     Next.js pages and the /api/catalogue route
-  components/              Studio, Viewport, MaterialPanel, RegionBar, Swatch
+  app/admin/               admin page; app/api/admin/* admin API, app/api/enquiries quote API
+  components/              Studio, Viewport, MaterialPanel, RegionBar, Swatch, Designs/Summary/Quote dialogs, admin/
+  lib/designs/             saved designs and variants, share links, summary (pure, unit-tested)
+  lib/enquiries/           quotation form schema
   lib/catalogue/           product schema (zod), validation, CSV parser, search/paging
   lib/materials/           product -> material settings (pure, unit-tested)
   lib/models/              region ids, kitchen model registry, mesh-to-region mapping
   lib/scene/               Babylon.js: viewer, procedural kitchens, texture cache, material service, UVs
-  lib/server/              file-backed catalogue repository
+  lib/server/              catalogue repository and imports, enquiry store (file or Supabase), admin sign-in, rate limit
 tests/unit/                unit tests
 ```
 
@@ -148,13 +163,36 @@ For a GLB file:
 
 The GLB loading path is implemented but has not yet been exercised with a real model file, because none has been supplied.
 
+## Where data is stored
+
+Everything uses free options. Nothing is sent to a paid service.
+
+| Data | Where | Notes |
+| --- | --- | --- |
+| Saved designs and variants | The visitor's browser (localStorage) | Only on that browser and device; lost if site data is cleared. Use a share link to move a design. |
+| Share links | Inside the link itself (`/?design=…`) | No server storage. The link holds the layout, panel codes and camera, not prices or personal data. |
+| Quotation enquiries | `DATA_DIR/enquiries.json` on the server, or Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set | The file option needs a server with a disk that is kept (any Node.js host or VPS). On Vercel or Netlify the disk is not kept, so set up Supabase (free tier, run `supabase/schema.sql`). Without either, submissions fail with an error and the visitor is told it was not sent. Back up the file or database; contact details are personal data. |
+| Products imported from admin | `DATA_DIR/catalogue/*.json` on the server | Same disk rule as above. Brand PDF imports are part of the code (`data/brands/`) and are deployed with it. |
+
+No email is sent when an enquiry arrives; staff check `/admin`. Email can be added later with an email provider's API key kept on the server.
+
+## Admin
+
+Set `ADMIN_PASSWORD` (at least 12 characters) in the server environment and open `/admin`.
+
+- The password is checked on the server and never appears in the browser code. Sign-in sets an HttpOnly, SameSite=Strict cookie signed with HMAC, valid for 8 hours. Changing the password signs everyone out.
+- Changes must come from the same site (Origin check). Sign-in is limited to 5 attempts per 15 minutes per address, and quote submissions to 5 per 10 minutes per address. These limits reset when the server restarts.
+- This is basic protection: one shared password, no individual staff accounts, no audit trail of who changed what, no two-factor sign-in. Always serve the site over HTTPS. For more staff or stricter needs, add Supabase Auth (free tier) with individual logins.
+
 ## Deployment (free options only)
 
-The app is a standard Next.js server app (pages plus one API route), with no database or paid services.
+The app is a standard Next.js server app (pages plus API routes). It needs no database unless you deploy to a serverless host and want enquiries stored (then use the Supabase free tier).
 
 - **Netlify (free plan):** connect the GitHub repo; Netlify detects Next.js automatically. Build command `npm run build`.
 - **Vercel (Hobby, free):** import the repo; no settings needed. Vercel's Hobby plan is limited to non-commercial use, so it fits a private demo but a public company site would need a different plan or host.
-- **Any Node.js host or a small VPS:** `npm ci && npm run build && npm start` (port 3000, or set `PORT`).
+- **Any Node.js host or a small VPS:** `npm ci && npm run build && npm start` (port 3000, or set `PORT`). Enquiries and admin imports are saved in `DATA_DIR` on its disk; back that folder up.
+
+On Netlify and Vercel, enquiries need Supabase (see "Where data is stored"), and admin product import does not work because their disks are not kept; import with the command-line tools and redeploy instead.
 
 `data/*.json` is bundled with the API route for serverless hosts (see `outputFileTracingIncludes` in `next.config.ts`).
 
@@ -162,4 +200,5 @@ The app is a standard Next.js server app (pages plus one API route), with no dat
 
 - Kastamonu textures come from 520 px catalogue swatches, and the real texture scale (size of one repeat) is not in the PDF; the preview assumes 1 m. Supplier scans and repeat sizes would fix both.
 - Metals are approximated as grey non-metallic surfaces because no reflection environment is loaded; gloss shows as highlights rather than reflections.
-- Next stages (deferred): saved designs and compare (local storage first), share links, quotation request with a review step, catalogue/admin tools, Supabase (free tier) storage for designs and enquiries.
+- Saved designs are per browser. Saving designs to an account (so they follow a customer between devices) would need sign-in, for example Supabase Auth on the free tier.
+- No email or WhatsApp notification for new enquiries yet.

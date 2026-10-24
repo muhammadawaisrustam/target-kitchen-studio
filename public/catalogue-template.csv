@@ -1,0 +1,2 @@
+id,panelCode,productName,category,colourFamily,finish,brand,board,thicknessMm,widthMm,heightMm,madeIn,decorCode,textureUrl,thumbnailUrl,colourHex,textureScale,textureRotation,grainDirection,roughness,metalness,stockStatus,isActive,isPublished,isDemo,notes,colourFamilySource,sourceDocument,sourcePage
+example-1,EXAMPLE-001,Example Oak (replace me),Woodgrain,Light wood,Matt,Example Brand,Particleboard,18,2800,2070,,EXAMPLE,/textures/EXAMPLE-001.jpg,/thumbs/EXAMPLE-001.jpg,,1.0,0,vertical,,,,true,false,true,Template row only - not a real product,supplied,,

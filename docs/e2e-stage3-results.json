@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Save a named design in the browser",
+    "ok": true,
+    "detail": "stored with 5 region codes and camera"
+  },
+  {
+    "name": "Variants keep separate panel choices; switching updates the 3D view",
+    "ok": true,
+    "detail": "Variant A lower 1-026 Garden Oak, Variant B lower 1-668 Canaletto"
+  },
+  {
+    "name": "Unsaved changes are not lost silently when switching variants",
+    "ok": true,
+    "detail": "asked first; discard kept the saved version; save-then-open stored HG RED in Variant B"
+  },
+  {
+    "name": "Saved designs survive a page reload",
+    "ok": true,
+    "detail": "Villa 12 kitchen · Variant B; lower 1-668-T18-C-L-27"
+  },
+  {
+    "name": "Summary lists every region's Item ID, compares variants, downloads CSV",
+    "ok": true,
+    "detail": "5 rows, 2 variants compared, CSV Villa-12-kitchen-panels.csv, link 325 chars"
+  },
+  {
+    "name": "Share link opens the same design on another device (no saved data)",
+    "ok": true,
+    "detail": "same 5 codes and camera; not saved until the visitor chooses to"
+  },
+  {
+    "name": "Share link with an unknown code: reported, nothing substituted",
+    "ok": true,
+    "detail": "FAKE-999 reported, lower cabinets left unassigned; damaged link reported"
+  },
+  {
+    "name": "Quote form: missing details are flagged and nothing is sent",
+    "ok": true,
+    "detail": "Please enter your name. / Please give a phone number or an email address. / Please confirm we may contact you about this enquiry."
+  },
+  {
+    "name": "Quote form: a server failure shows an error, never success",
+    "ok": true,
+    "detail": "HTTP 503 and network failure both show an error; form kept"
+  },
+  {
+    "name": "Quote form: success only after the server stores it, with the panel codes",
+    "ok": true,
+    "detail": "ENQ-20261024-P428QZ saved with 5 panels"
+  },
+  {
+    "name": "Enquiry API rejects unknown panels and spam without storing them",
+    "ok": true,
+    "detail": "unknown code 422, honeypot 400, no consent 422; nothing stored"
+  },
+  {
+    "name": "Admin: blocked without sign-in; wrong password refused",
+    "ok": true,
+    "detail": "401 without cookie; wrong password rejected; password not in any page script"
+  },
+  {
+    "name": "Admin: sign in, see the enquiry, change status, export CSV",
+    "ok": true,
+    "detail": "HttpOnly SameSite=Strict cookie; status saved to the server file; CSV export has the enquiry; cross-site change refused (403)"
+  },
+  {
+    "name": "Admin: product import is checked first, errors block it, clean file goes live and can be removed",
+    "ok": true,
+    "detail": "file with a duplicate code and a missing code was blocked; clean file imported 2 products, then removed"
+  },
+  {
+    "name": "Admin: sign out ends access",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Admin stays switched off when no password is set",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "No page errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Phone: header, designs, summary and quote dialogs fit the screen",
+    "ok": true,
+    "detail": "no horizontal scrolling"
+  }
+]

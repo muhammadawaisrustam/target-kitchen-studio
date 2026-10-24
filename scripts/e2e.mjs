@@ -113,7 +113,8 @@ await check("T2d zoom buttons and preset views", async () => {
   const r2 = (await cam(page)).radius;
   assert(r1 > r0 && r2 < r1, `radius ${r0} -> ${r1} -> ${r2}`);
   await page.click("[data-testid=view-front]");
-  await page.waitForTimeout(900);
+  // Wait for the camera animation to finish (slow software rendering can take longer than its 0.55 s).
+  await page.waitForFunction(() => Math.abs(window.__kitchenViewer.getCameraState().alpha + Math.PI / 2) < 0.05, null, { timeout: 5000 }).catch(() => undefined);
   const front = await cam(page);
   assert(Math.abs(front.alpha + Math.PI / 2) < 0.05, `front alpha ${front.alpha}`);
   await page.screenshot({ path: `${OUT}/02-front-view.png` });

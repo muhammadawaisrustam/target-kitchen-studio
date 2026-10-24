@@ -2,20 +2,21 @@
   "name": "target-kitchen-studio",
   "version": "0.1.0",
   "private": true,
-  "description": "Prototype 3D kitchen visualisation platform for Target Furniture Factory (DEMO data only).",
+  "description": "Prototype 3D kitchen visualisation platform for Target Furniture Factory.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/unit/*.test.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/unit/*.test.ts",
     "test:e2e": "node scripts/e2e.mjs",
     "textures:generate": "node scripts/generate-demo-textures.mjs",
     "catalogue:validate": "tsx scripts/catalogue-cli.ts validate",
     "catalogue:import": "tsx scripts/catalogue-cli.ts import",
     "catalogue:stress": "tsx scripts/catalogue-cli.ts stress",
     "catalogue:import-pdf": "node scripts/import-brand-pdf.mjs",
-    "test:e2e:brands": "node scripts/e2e-brands.mjs"
+    "test:e2e:brands": "node scripts/e2e-brands.mjs",
+    "test:e2e:stage3": "node scripts/e2e-stage3.mjs"
   },
   "engines": {
     "node": ">=20.9"

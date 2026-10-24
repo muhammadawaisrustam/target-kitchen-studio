@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // Babylon.js ships ES modules; transpiling keeps tree-shaking predictable.
   transpilePackages: ["@babylonjs/core", "@babylonjs/loaders"],
   // The catalogue API reads JSON from /data at runtime; make sure serverless hosts bundle it.
-  outputFileTracingIncludes: { "/api/catalogue": ["./data/**/*.json"] },
+  outputFileTracingIncludes: { "/api/**/*": ["./data/**/*.json"] },
   async headers() {
     return [
       {
