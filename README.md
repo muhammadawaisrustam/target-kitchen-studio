@@ -2,9 +2,9 @@
 
 A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet region, pick a panel, and the 3D kitchen updates live.
 
-> **Demonstration data only.** Every panel code (`DEMO-…`), name, texture and specification in this repository is synthetic. None of it is a genuine Target Furniture Factory product, stock item or price. The kitchens are illustrative prototypes, not manufacturing drawings. No official Target branding is used.
+> **Data.** By default the app serves the real **Kastamonu** panels imported from `Target-Kastamonu_Melamine_Panels_Profile_2026.pdf` (145 Item IDs). Only what the PDF prints is used: Item ID, decor name, board, collection, finish (from the name prefix), sheet size, origin and swatch image. Colour groups and sheen are estimates and are labelled as estimates in the UI. No prices, stock or texture scale are invented. The separate `DEMO-…` catalogue is synthetic and is kept for testing. The kitchens are illustrative prototypes, not manufacturing drawings. No official Target branding is used.
 
-![Desktop view](docs/screenshots/05-three-regions.jpg)
+![Real Kastamonu panels on three regions](docs/screenshots/brands-02-mixed.jpg)
 
 ## What works today
 
@@ -20,7 +20,8 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
   - textures downloaded only when a panel is selected, cached, and released when unused;
   - a hatched "TEXTURE UNAVAILABLE" placeholder and a warning when a texture fails. Another panel is never silently substituted.
 - Camera: drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan, arrow keys when the canvas is focused, zoom buttons, reset, and Front / Side / Top / 3D views.
-- Searchable catalogue (code with or without dashes, name, category, colour, finish), category/colour/finish filters, and paging served by `/api/catalogue`. Tested with 600 records.
+- Searchable catalogue (Item ID with or without dashes, decor name, collection, colour, finish, brand, board), brand/board/collection/colour/finish filters, and server-side paging from `/api/catalogue`. Tested with 600 records.
+- PDF importer for brand catalogues laid out like the Kastamonu profile (see "Importing a brand PDF").
 - Responsive layout for desktop, tablet and phone.
 - Render-on-demand: the GPU stops drawing about 1.5 s after the last interaction.
 
@@ -42,7 +43,9 @@ npm run build && npm start   # production build
 ```bash
 npm test             # unit tests (Node's built-in test runner)
 npm run build && npm start   # in one terminal
-npm run test:e2e     # browser checks against http://localhost:3000 (set BASE_URL to change)
+npm run test:e2e:brands   # browser checks on the real brand data (default server)
+CATALOGUE_FILE=data/demo-catalogue.json npm start   # demo data, then:
+npm run test:e2e     # browser checks against the DEMO catalogue (set BASE_URL to change)
 ```
 
 The browser checks need Playwright's Chromium (`npx playwright install chromium` once). Screenshots and `results.json` go to `e2e-screenshots/`.
@@ -51,8 +54,9 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 
 | Check | Result |
 | --- | --- |
-| Browser checks | 20/20 pass |
-| Unit tests: catalogue validation, CSV import, 600-record query, material mapping, mesh-to-region mapping, UV projection | 15/15 pass |
+| Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
+| Browser checks, DEMO catalogue | 20/20 pass |
+| Unit tests: catalogue validation, CSV import, 600-record query, material mapping, mesh-to-region mapping, UV projection, brand files (codes unique, every image file exists, every product traceable to a PDF page) | 17/17 pass |
 | T1 3D kitchen renders (142 meshes, 5 regions) | pass |
 | T2 rotate (drag and arrow keys), zoom (wheel and buttons), pan (right-drag), preset views, reset view | pass |
 | T3 search by code and by name, empty state, category filter | pass |
@@ -70,11 +74,16 @@ Not verified: real phones and tablets with GPUs (only emulated touch in Chromium
 
 ```
 data/                      demo catalogue (JSON), CSV template
+data/brands/               imported real brand catalogues (one JSON per brand)
+public/brands/<brand>/     textures and thumbnails extracted from the brand PDF
 public/demo-assets/        generated DEMO textures, thumbnails, model previews
+docs/imports/              import report and product list per brand
 scripts/
   generate-demo-textures.mjs   procedural texture generator (npm run textures:generate)
   catalogue-cli.ts             validate / import / stress-test catalogues
-  e2e.mjs                      browser acceptance checks
+  import-brand-pdf.mjs         brand PDF -> catalogue JSON, textures, thumbnails, report
+  e2e.mjs                      browser acceptance checks (DEMO data)
+  e2e-brands.mjs               browser checks on real brand data
 src/
   app/                     Next.js pages and the /api/catalogue route
   components/              Studio, Viewport, MaterialPanel, RegionBar, Swatch
@@ -86,7 +95,25 @@ src/
 tests/unit/                unit tests
 ```
 
-## Adding real panel data
+## Importing a brand PDF
+
+```bash
+npm run catalogue:import-pdf -- "Target-Kastamonu_Melamine_Panels_Profile_2026.pdf" --brand Kastamonu
+```
+
+This writes `data/brands/<brand>.json`, `public/brands/<brand>/textures|thumbs/`, and `docs/imports/<brand>-report.md` plus a CSV. Restart the server and the brand appears in the Brand filter. The importer:
+
+- reads each decor card (name, Item ID lines, swatch) and cross-checks it against the PDF's quick order list (board, collection, sheet size, origin, page);
+- uses the swatch embedded in the PDF at its original resolution, never a substitute;
+- stores plain colours (uni collections with an even swatch) as a measured colour instead of a texture;
+- detects grain direction and rotates the texture so grain runs up the image;
+- reports low resolution, non-tiling swatches, unclear grain, names that disagree with the swatch colour, missing finishes and duplicates.
+
+It expects the same layout as the Kastamonu profile (Item IDs like `1-026-T18-C-J-1`, a swatch above each decor name, a quick order list table). A PDF in another layout will report errors rather than guess.
+
+Swatches in the Kastamonu PDF are 520 × 520 px and most do not tile, so repeats can show seams up close. High-resolution seamless scans from the supplier can be dropped into `public/brands/kastamonu/textures/` with the same file names.
+
+## Adding real panel data from a spreadsheet
 
 1. Fill in `data/catalogue-template.csv` (one row per panel), or supply JSON in the same shape as `data/demo-catalogue.json`. Leave unknown specifications blank: optional fields stay empty and are never invented.
 2. Put texture and thumbnail images under `public/` (JPG, PNG or WebP) and reference them as `/textures/CODE.jpg`, or use `https://` URLs.
@@ -96,7 +123,7 @@ tests/unit/                unit tests
    npm run catalogue:import -- my-panels.csv --out data/catalogue.json --check-files
    ```
    The validator rejects missing or duplicate codes, duplicate ids, bad URLs and unsupported image formats, and warns about missing textures, scale or grain direction.
-4. Set `CATALOGUE_FILE=data/catalogue.json` (see `.env.example`) and restart. No application code changes are needed.
+4. Put the file in `data/brands/` (all files there are served together), or set `CATALOGUE_FILE` (see `.env.example`) and restart. No application code changes are needed.
 
 Field notes: `textureScale` is the real-world size in metres covered by one repeat of the texture; `grainDirection` is `vertical`, `horizontal` or `none`; `roughness` is 0 (mirror) to 1 (fully matt); set `isDemo` to `false` for genuine products. `stockStatus` should only be filled from a reliable live source.
 
@@ -133,6 +160,6 @@ The app is a standard Next.js server app (pages plus one API route), with no dat
 
 ## Known limitations and next steps
 
-- Demo textures are procedural; real Target textures and codes are needed.
+- Kastamonu textures come from 520 px catalogue swatches, and the real texture scale (size of one repeat) is not in the PDF; the preview assumes 1 m. Supplier scans and repeat sizes would fix both.
 - Metals are approximated as grey non-metallic surfaces because no reflection environment is loaded; gloss shows as highlights rather than reflections.
 - Next stages (deferred): saved designs and compare (local storage first), share links, quotation request with a review step, catalogue/admin tools, Supabase (free tier) storage for designs and enquiries.

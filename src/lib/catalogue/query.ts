@@ -5,6 +5,8 @@ export interface CatalogueQuery {
   category?: string[];
   colourFamily?: string[];
   finish?: string[];
+  brand?: string[];
+  board?: string[];
   codes?: string[];
   page?: number;
   pageSize?: number;
@@ -22,10 +24,13 @@ export interface CataloguePage {
   page: number;
   pageSize: number;
   pageCount: number;
-  facets: { category: FacetCount[]; colourFamily: FacetCount[]; finish: FacetCount[] };
+  facets: Record<FacetKey, FacetCount[]>;
 }
 
 export const MAX_PAGE_SIZE = 60;
+
+export const FACET_KEYS = ["brand", "board", "category", "colourFamily", "finish"] as const;
+export type FacetKey = (typeof FACET_KEYS)[number];
 
 const norm = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -33,13 +38,18 @@ const norm = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerC
 export function matchesSearch(p: Product, q: string): boolean {
   const terms = norm(q).split(/\s+/).filter(Boolean);
   if (!terms.length) return true;
-  const hay = norm([p.panelCode, p.panelCode.replace(/[-_\s]/g, ""), p.productName, p.category, p.colourFamily, p.finish, p.brand ?? ""].join(" "));
+  const hay = norm(
+    [p.panelCode, p.panelCode.replace(/[-_\s]/g, ""), p.decorCode ?? "", p.productName, p.category, p.colourFamily, p.finish, p.brand ?? "", p.board ?? ""].join(" "),
+  );
   return terms.every((t) => hay.includes(t));
 }
 
-function facet(items: Product[], key: "category" | "colourFamily" | "finish"): FacetCount[] {
+function facet(items: Product[], key: FacetKey): FacetCount[] {
   const counts = new Map<string, number>();
-  for (const p of items) counts.set(p[key], (counts.get(p[key]) ?? 0) + 1);
+  for (const p of items) {
+    const v = p[key];
+    if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
+  }
   return [...counts.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => a.value.localeCompare(b.value));
 }
 
@@ -57,18 +67,11 @@ export function queryCatalogue(all: Product[], query: CatalogueQuery): Catalogue
   if (query.q) items = items.filter((p) => matchesSearch(p, query.q!));
 
   // Facet counts reflect the search text but not the facet's own filter, so users can widen a filter.
-  const filterBy = (list: Product[], skip?: string) =>
-    list.filter(
-      (p) =>
-        (skip === "category" || !query.category?.length || query.category.includes(p.category)) &&
-        (skip === "colourFamily" || !query.colourFamily?.length || query.colourFamily.includes(p.colourFamily)) &&
-        (skip === "finish" || !query.finish?.length || query.finish.includes(p.finish)),
+  const filterBy = (list: Product[], skip?: FacetKey) =>
+    list.filter((p) =>
+      FACET_KEYS.every((k) => k === skip || !query[k]?.length || query[k]!.includes(p[k] ?? "")),
     );
-  const facets = {
-    category: facet(filterBy(items, "category"), "category"),
-    colourFamily: facet(filterBy(items, "colourFamily"), "colourFamily"),
-    finish: facet(filterBy(items, "finish"), "finish"),
-  };
+  const facets = Object.fromEntries(FACET_KEYS.map((k) => [k, facet(filterBy(items, k), k)])) as Record<FacetKey, FacetCount[]>;
   items = filterBy(items);
   items = [...items].sort((a, b) => a.panelCode.localeCompare(b.panelCode, undefined, { numeric: true }));
 
@@ -103,6 +106,8 @@ export function parseCatalogueParams(params: URLSearchParams): CatalogueQuery {
     category: list("category"),
     colourFamily: list("colourFamily"),
     finish: list("finish"),
+    brand: list("brand"),
+    board: list("board"),
     codes: list("codes"),
     page: num("page"),
     pageSize: num("pageSize"),

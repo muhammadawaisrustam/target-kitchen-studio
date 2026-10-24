@@ -7,12 +7,14 @@ export interface CatalogueFilters {
   category: string[];
   colourFamily: string[];
   finish: string[];
+  brand: string[];
+  board: string[];
 }
 
 export async function fetchCatalogue(filters: Partial<CatalogueFilters> & { page?: number; pageSize?: number; codes?: string[] }, signal?: AbortSignal): Promise<CatalogueResponse> {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
-  for (const key of ["category", "colourFamily", "finish", "codes"] as const) {
+  for (const key of ["category", "colourFamily", "finish", "brand", "board", "codes"] as const) {
     for (const v of filters[key] ?? []) params.append(key, v);
   }
   if (filters.page) params.set("page", String(filters.page));

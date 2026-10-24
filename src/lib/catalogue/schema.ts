@@ -73,6 +73,16 @@ export const ProductSchema = z.object({
   isDemo: z.boolean().default(false),
   notes: z.string().max(500).optional(),
   updatedAt: z.string().optional(),
+  /** Core board, e.g. "Particleboard" or "MDF", as stated by the supplier. */
+  board: z.string().trim().min(1).max(60).optional(),
+  madeIn: z.string().trim().min(1).max(60).optional(),
+  /** Supplier decor number shared by every sheet size of the same decor (e.g. "1-493"). */
+  decorCode: z.string().trim().min(1).max(40).optional(),
+  /** "swatch-estimate" when the colour group was computed from the swatch, not supplied. */
+  colourFamilySource: z.enum(["supplied", "swatch-estimate"]).optional(),
+  /** Where the record came from, so every fact can be traced back. */
+  sourceDocument: z.string().max(200).optional(),
+  sourcePage: z.number().int().positive().optional(),
 });
 
 export type Product = z.infer<typeof ProductSchema>;
@@ -103,6 +113,12 @@ export const PRODUCT_FIELDS = [
   "isPublished",
   "isDemo",
   "notes",
+  "board",
+  "madeIn",
+  "decorCode",
+  "colourFamilySource",
+  "sourceDocument",
+  "sourcePage",
 ] as const satisfies readonly (keyof Product)[];
 
 export const NUMERIC_FIELDS = new Set<string>([
@@ -113,6 +129,7 @@ export const NUMERIC_FIELDS = new Set<string>([
   "textureRotation",
   "roughness",
   "metalness",
+  "sourcePage",
 ]);
 export const BOOLEAN_FIELDS = new Set<string>(["isActive", "isPublished", "isDemo"]);
 

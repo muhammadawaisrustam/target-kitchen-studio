@@ -36,6 +36,7 @@ export const FINISH_ROUGHNESS: Record<string, number> = {
   "textured matt": 0.76,
   "deep texture": 0.78,
   satin: 0.5,
+  "soft touch": 0.9,
   "semi gloss": 0.32,
   gloss: 0.18,
   "high gloss": 0.1,

@@ -24,12 +24,13 @@ export const KITCHEN_MODELS: KitchenModelDefinition[] = [
     previewImage: "/demo-assets/models/demo-l-island.jpg",
     isPrototype: true,
     regions: { ...proceduralRules },
+    // Kastamonu codes first (real catalogue), then DEMO codes (demo catalogue).
     defaults: {
-      upper_cabinets: "DEMO-UC-101",
-      lower_cabinets: "DEMO-WD-001",
-      tall_cabinets: "DEMO-UC-101",
-      island_panels: "DEMO-WD-004",
-      open_shelves: "DEMO-WD-001",
+      upper_cabinets: ["1-001-T18-C-J-1", "DEMO-UC-101"], // Corpus White
+      lower_cabinets: ["1-026-T18-C-J-1", "DEMO-WD-001"], // Garden Oak
+      tall_cabinets: ["1-001-T18-C-J-1", "DEMO-UC-101"],
+      island_panels: ["1-680-T18-C-L-27", "DEMO-WD-004"], // Stelvio Walnut
+      open_shelves: ["1-026-T18-C-J-1", "DEMO-WD-001"],
     },
     camera: { alpha: -1.05, beta: 1.18, radius: 4.7, target: [1.8, 0.95, -1.35] },
   },
@@ -48,10 +49,10 @@ export const KITCHEN_MODELS: KitchenModelDefinition[] = [
       open_shelves: proceduralRules.open_shelves,
     },
     defaults: {
-      upper_cabinets: "DEMO-UC-104",
-      lower_cabinets: "DEMO-UC-104",
-      tall_cabinets: "DEMO-WD-003",
-      open_shelves: "DEMO-WD-003",
+      upper_cabinets: ["1-216-T18-C-J-1", "DEMO-UC-104"], // Luna
+      lower_cabinets: ["1-216-T18-C-J-1", "DEMO-UC-104"],
+      tall_cabinets: ["1-507-T18-C-J-1", "DEMO-WD-003"], // Yenice Oak
+      open_shelves: ["1-507-T18-C-J-1", "DEMO-WD-003"],
     },
     camera: { alpha: -1.35, beta: 1.25, radius: 5.4, target: [2.1, 1.1, -0.6] },
   },

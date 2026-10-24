@@ -70,7 +70,10 @@ test("explicit mapping export groups mesh names by region", () => {
 
 test("registry: every model has defaults only for regions it maps", () => {
   for (const model of KITCHEN_MODELS) {
-    for (const r of Object.keys(model.defaults)) assert.ok(r in model.regions, `${model.id} default for unmapped ${r}`);
+    for (const [r, list] of Object.entries(model.defaults)) {
+      assert.ok(r in model.regions, `${model.id} default for unmapped ${r}`);
+      assert.ok(list && list.length > 0, `${model.id} ${r} has no candidates`);
+    }
     assert.ok(["upper_cabinets", "lower_cabinets", "tall_cabinets"].every((r) => r in model.regions));
   }
 });

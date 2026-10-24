@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Real catalogue loads: 145 Kastamonu Item IDs, no DEMO disclaimer",
+    "ok": true,
+    "detail": "145 panels"
+  },
+  {
+    "name": "Starting design uses real codes",
+    "ok": true,
+    "detail": "lower GARDEN OAK texture, upper CORPUS WHITE #F9F9F7"
+  },
+  {
+    "name": "Only selected textures are downloaded (not all 101)",
+    "ok": true,
+    "detail": "2 texture files requested at start"
+  },
+  {
+    "name": "Search by Item ID fragment, by name, and by board filter",
+    "ok": true,
+    "detail": "1-669 -> CLAY; 'walnut' -> 7; MDF -> 32"
+  },
+  {
+    "name": "Apply a real woodgrain and a real MDF gloss to two regions",
+    "ok": true,
+    "detail": "tall CANALETTO WALNUT, upper HG RED PVC (roughness 0.1), lower unchanged"
+  },
+  {
+    "name": "Details show only PDF facts plus labelled estimates",
+    "ok": true,
+    "detail": "code, brand, board, finish, sheet, origin, source page, colour marked estimated"
+  },
+  {
+    "name": "No page errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Phone layout with real data",
+    "ok": true,
+    "detail": ""
+  }
+]

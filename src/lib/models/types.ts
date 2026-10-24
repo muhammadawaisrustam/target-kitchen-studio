@@ -41,7 +41,11 @@ export interface KitchenModelDefinition {
   /** Prototype models are illustrative only and are labelled as such in the UI. */
   isPrototype: boolean;
   regions: Partial<Record<RegionId, RegionMappingRule>>;
-  /** Default panel code per region, used for new designs and "Reset design". */
-  defaults: Partial<Record<RegionId, string>>;
+  /**
+   * Starting panel per region, used for new designs and "Reset design". Each region lists
+   * candidate panel codes in order; the first one present in the loaded catalogue is used.
+   * If none is present the region keeps its original (unassigned) finish.
+   */
+  defaults: Partial<Record<RegionId, readonly string[]>>;
   camera: CameraState;
 }

@@ -16,12 +16,13 @@ interface Props {
   onSelect: (p: Product) => void;
 }
 
-type Filters = { category: string; colourFamily: string; finish: string };
+type Filters = { brand: string; board: string; category: string; colourFamily: string; finish: string };
+const NO_FILTERS: Filters = { brand: "", board: "", category: "", colourFamily: "", finish: "" };
 
 export default function MaterialPanel({ activeRegionLabel, selectedCode, selectedProduct, selectedState, onSelect }: Props) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [filters, setFilters] = useState<Filters>({ category: "", colourFamily: "", finish: "" });
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<CatalogueResponse | null>(null);
   const [items, setItems] = useState<Product[]>([]);
@@ -46,6 +47,8 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
         category: filters.category ? [filters.category] : [],
         colourFamily: filters.colourFamily ? [filters.colourFamily] : [],
         finish: filters.finish ? [filters.finish] : [],
+        brand: filters.brand ? [filters.brand] : [],
+        board: filters.board ? [filters.board] : [],
         page,
         pageSize: PAGE_SIZE,
       },
@@ -65,7 +68,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
   }, [debounced, filters, page]);
 
   const facetSelect = (key: keyof Filters, label: string) => (
-    <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] font-medium uppercase tracking-wider text-muted">
+    <label className="flex min-w-0 flex-col gap-1 text-[11px] font-medium uppercase tracking-wider text-muted">
       {label}
       <select
         value={filters[key]}
@@ -84,7 +87,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
     </label>
   );
 
-  const anyFilter = query || filters.category || filters.colourFamily || filters.finish;
+  const anyFilter = query || Object.values(filters).some(Boolean);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -107,20 +110,27 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search code or name, e.g. WD-004 or walnut"
+            placeholder="Search Item ID or name, e.g. 1-669 or walnut"
             className="w-full rounded-xl border border-line bg-canvas/60 px-3.5 py-2.5 text-sm placeholder:text-[#8d877e]"
             autoComplete="off"
             data-testid="panel-search"
           />
         </div>
-        <div className="flex gap-2">
-          {facetSelect("category", "Category")}
+        <div className="grid grid-cols-3 gap-2 lg:grid-cols-3">
+          {(data?.facets.brand.length ?? 0) > 0 && facetSelect("brand", "Brand")}
+          {(data?.facets.board.length ?? 0) > 0 && facetSelect("board", "Board")}
+          {facetSelect("category", "Collection")}
           {facetSelect("colourFamily", "Colour")}
           {facetSelect("finish", "Finish")}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-busy={loading}>
+        {data && !data.isDemo && (
+          <p className="mb-3 rounded-lg bg-canvas px-3 py-2 text-[12px] leading-snug text-muted" data-testid="colour-disclaimer">
+            Colours may vary on screen. Please check with an original sample before ordering. Colour groups are estimated from the swatch images.
+          </p>
+        )}
         {data?.isDemo && (
           <p className="mb-3 rounded-lg bg-canvas px-3 py-2 text-[12px] leading-snug text-muted" data-testid="demo-disclaimer">
             <strong className="text-ink">Demonstration catalogue.</strong> Codes marked DEMO, names, textures and specifications are synthetic
@@ -135,7 +145,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
               className="font-medium text-accent hover:underline"
               onClick={() => {
                 setQuery("");
-                setFilters({ category: "", colourFamily: "", finish: "" });
+                setFilters(NO_FILTERS);
               }}
             >
               Clear search
@@ -182,7 +192,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
                   <span className="block px-2 py-1.5">
                     <span className="block truncate text-[11px] font-semibold tracking-wide">{p.panelCode}</span>
                     <span className="block truncate text-[12px] text-muted">{p.productName}</span>
-                    <span className="block truncate text-[11px] text-muted">{p.finish}</span>
+                    <span className="block truncate text-[11px] text-muted">{p.finish !== "Not stated" ? p.finish : (p.board ?? p.category)}</span>
                   </span>
                 </button>
               </li>
@@ -202,15 +212,16 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
 }
 
 function SelectedDetails({ product: p, state }: { product: Product; state?: RegionState }) {
-  const specs: [string, string][] = [
-    ["Category", p.category],
-    ["Colour", p.colourFamily],
-    ["Finish", p.finish],
-  ];
+  const specs: [string, string][] = [];
   if (p.brand) specs.push(["Brand", p.brand]);
+  if (p.board) specs.push(["Board", p.board]);
+  specs.push(["Collection", p.category]);
+  specs.push(["Finish", p.finish]);
+  specs.push(["Colour", p.colourFamilySource === "swatch-estimate" ? `${p.colourFamily} (estimated)` : p.colourFamily]);
   if (p.thicknessMm) specs.push(["Thickness", `${p.thicknessMm} mm`]);
   if (p.widthMm && p.heightMm) specs.push(["Sheet", `${p.widthMm} × ${p.heightMm} mm`]);
-  if (p.grainDirection && p.grainDirection !== "none") specs.push(["Grain", p.grainDirection]);
+  if (p.madeIn) specs.push(["Made in", p.madeIn]);
+  if (p.sourceDocument) specs.push(["Source", `${p.sourceDocument}${p.sourcePage ? `, p. ${p.sourcePage}` : ""}`]);
   return (
     <div className="flex gap-3 rounded-xl border border-line p-2.5" data-testid="selected-details">
       <Swatch product={p} className="h-11 w-11 shrink-0 rounded-lg lg:h-16 lg:w-16" />
@@ -219,8 +230,7 @@ function SelectedDetails({ product: p, state }: { product: Product; state?: Regi
           {p.panelCode} <span className="font-normal text-muted">· {p.productName}</span>
         </p>
         <p className="truncate text-[12px] text-muted lg:hidden">
-          {p.category} · {p.finish}
-          {p.thicknessMm ? ` · ${p.thicknessMm} mm` : ""}
+          {[p.brand, p.board, p.category, p.widthMm && p.heightMm ? `${p.widthMm}×${p.heightMm} mm` : null].filter(Boolean).join(" · ")}
         </p>
         {/* Full specification list on large screens; phones keep the grid visible instead. */}
         <dl className="mt-1 hidden grid-cols-[auto_1fr] gap-x-2 text-[12px] leading-5 lg:grid">
@@ -235,7 +245,8 @@ function SelectedDetails({ product: p, state }: { product: Product; state?: Regi
               <dt className="text-muted">Sheen</dt>
               <dd className="truncate">
                 roughness {state.roughness.toFixed(2)}
-                {state.roughnessSource !== "product" && <span className="text-muted"> (estimated from finish)</span>}
+                {state.roughnessSource === "finish-default" && <span className="text-muted"> (estimated from finish)</span>}
+                {state.roughnessSource === "fallback" && <span className="text-muted"> (estimate: finish not stated)</span>}
               </dd>
             </>
           )}

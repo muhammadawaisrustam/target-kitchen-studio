@@ -6,6 +6,7 @@ import { fetchCatalogue } from "@/lib/catalogue/client";
 import { DEFAULT_MODEL_ID, KITCHEN_MODELS, getModel } from "@/lib/models/registry";
 import { REGION_IDS, REGION_LABELS, type RegionId } from "@/lib/models/regions";
 import type { KitchenViewer, LoadReport } from "@/lib/scene/kitchenViewer";
+import type { KitchenModelDefinition } from "@/lib/models/types";
 import MaterialPanel from "./MaterialPanel";
 import RegionBar, { type RegionState } from "./RegionBar";
 import Viewport from "./Viewport";
@@ -19,7 +20,7 @@ export default function Studio() {
   const [loadedModelId, setLoadedModelId] = useState<string | null>(null);
   const [regions, setRegions] = useState<RegionId[]>([]);
   const [activeRegion, setActiveRegion] = useState<RegionId>("lower_cabinets");
-  const [selections, setSelections] = useState<Selections>({ ...model.defaults });
+  const [selections, setSelections] = useState<Selections>({});
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [regionState, setRegionState] = useState<Partial<Record<RegionId, RegionState>>>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -31,6 +32,33 @@ export default function Studio() {
       for (const p of list) next[p.panelCode] = p;
       return next;
     });
+  }, []);
+
+  /** Picks, per region, the first default candidate that exists in the loaded catalogue. */
+  const applyDefaults = useCallback(
+    async (m: KitchenModelDefinition) => {
+      const candidates = [...new Set(Object.values(m.defaults).flatMap((c) => [...(c ?? [])]))];
+      try {
+        const res = await fetchCatalogue({ codes: candidates, pageSize: 60 });
+        rememberProducts(res.items);
+        const found = new Set(res.items.map((p) => p.panelCode));
+        const next: Selections = {};
+        for (const [region, list] of Object.entries(m.defaults) as [RegionId, readonly string[]][]) {
+          const code = list.find((c) => found.has(c));
+          if (code) next[region] = code;
+        }
+        setSelections(next);
+      } catch (err) {
+        setNotice(`Could not load the starting panels: ${(err as Error).message}`);
+      }
+    },
+    [rememberProducts],
+  );
+
+  useEffect(() => {
+    void applyDefaults(model);
+    // Only on first load; layout changes and resets call applyDefaults directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onModelLoaded = useCallback(
@@ -117,11 +145,11 @@ export default function Studio() {
     const next = getModel(id);
     if (!next) return;
     setModelId(id);
-    setSelections({ ...next.defaults });
+    void applyDefaults(next);
   };
 
   const resetDesign = () => {
-    setSelections({ ...model.defaults });
+    void applyDefaults(model);
     viewer?.resetCamera();
     setNotice(null);
   };
@@ -135,7 +163,7 @@ export default function Studio() {
           <p className="whitespace-nowrap font-display text-base leading-tight tracking-tight sm:text-xl">
             Target Kitchen Studio
           </p>
-          <p className="hidden whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.12em] text-muted sm:block">Prototype · demo panels</p>
+          <p className="hidden whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.12em] text-muted sm:block">Prototype</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <label className="sr-only" htmlFor="layout">
