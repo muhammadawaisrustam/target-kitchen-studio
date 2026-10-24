@@ -59,6 +59,7 @@ export default function RegionBar({ regions, active, onSelect, selections, produ
                 <span className="block truncate text-xs text-muted" data-testid={`region-${r}-summary`}>
                   {s?.status === "loading" ? "Loading…" : code ? `${code} · ${product?.productName ?? ""}` : "Original finish"}
                 </span>
+                {product?.isDemo && <span className="block text-[11px] font-semibold text-warn">DEMO · not a real product</span>}
                 {s?.status === "warning" && <span className="block text-[11px] font-medium text-warn">⚠ Texture unavailable</span>}
               </span>
             </button>

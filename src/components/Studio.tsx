@@ -310,7 +310,7 @@ export default function Studio() {
 
   return (
     <>
-      <div id="studio-root" className="flex h-dvh flex-col">
+      <div id="studio-root" className="flex min-h-dvh flex-col lg:h-dvh">
         <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-2.5 lg:px-6">
           <div className="min-w-0 flex-1 sm:flex-none">
             <p className="whitespace-nowrap font-display text-base leading-tight tracking-tight sm:text-xl">Target Kitchen Studio</p>
@@ -353,15 +353,17 @@ export default function Studio() {
           </nav>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:gap-4 lg:p-4">
-          <main className="flex min-h-0 flex-col lg:min-w-0 lg:flex-1">
-            <div className="h-[42svh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
+        {/* Phones: the page scrolls and the 3D view + region bar stay pinned at the top, so the panel list gets the
+            rest of the screen. Desktop: fixed-height two-column layout with an internally scrolling list. */}
+        <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row lg:gap-4 lg:p-4">
+          <main className="sticky top-0 z-20 flex flex-col bg-canvas lg:static lg:min-h-0 lg:min-w-0 lg:flex-1">
+            <div className="h-[36svh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
               <Viewport model={model} onViewer={setViewer} onModelLoaded={onModelLoaded} onRegionPicked={selectRegion} busy={busy} />
             </div>
             <RegionBar regions={regions} active={activeRegion} onSelect={selectRegion} selections={selections} products={products} state={regionState} />
           </main>
 
-          <aside className="flex min-h-0 flex-1 flex-col border-t border-line bg-surface lg:w-[400px] lg:flex-none lg:rounded-2xl lg:border lg:shadow-sm xl:w-[440px]">
+          <aside className="flex flex-1 flex-col border-t border-line lg:min-h-0 bg-surface lg:w-[400px] lg:flex-none lg:rounded-2xl lg:border lg:shadow-sm xl:w-[440px]">
             {notice && (
               <div className="flex items-start gap-2 border-b border-[#f1d9b5] bg-warn-soft px-4 py-2.5 text-sm text-warn" role="alert" data-testid="notice">
                 <span className="flex-1">{notice}</span>

@@ -90,7 +90,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
   const anyFilter = query || Object.values(filters).some(Boolean);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex flex-1 flex-col lg:min-h-0">
       <div className="space-y-3 border-b border-line px-4 pb-3 pt-4">
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg">Panel finishes</h2>
@@ -125,7 +125,7 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3" aria-busy={loading}>
+      <div className="px-4 py-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto" aria-busy={loading} data-testid="product-list">
         {data && !data.isDemo && (
           <p className="mb-3 rounded-lg bg-canvas px-3 py-2 text-[12px] leading-snug text-muted" data-testid="colour-disclaimer">
             Colours may vary on screen. Please check with an original sample before ordering. Colour groups are estimated from the swatch images.
@@ -183,6 +183,11 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
                 >
                   <span className="relative block aspect-square">
                     <Swatch product={p} className="h-full w-full" />
+                    {p.isDemo && (
+                      <span className="absolute left-1.5 top-1.5 rounded bg-warn-soft px-1 text-[10px] font-semibold tracking-wide text-warn" data-testid="demo-badge">
+                        DEMO
+                      </span>
+                    )}
                     {selected && (
                       <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] text-white" aria-hidden>
                         ✓

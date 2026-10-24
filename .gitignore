@@ -9,3 +9,4 @@ next-env.d.ts
 test-results/
 e2e-screenshots/
 data/stress-catalogue.json
+qa-screenshots/

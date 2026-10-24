@@ -56,7 +56,11 @@ export function validateCatalogueRecords(
           row,
           panelCode: rawCode || undefined,
           field: issue.path.join(".") || undefined,
-          message: issue.message,
+          // "Invalid input: expected string, received undefined" means the column is missing or empty.
+          message:
+            issue.code === "invalid_type" && /received undefined/.test(issue.message)
+              ? `${issue.path.join(".") || "field"} is required but missing or empty (see the CSV template columns)`
+              : issue.message,
         });
       }
       return;

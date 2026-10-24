@@ -6,7 +6,7 @@ import path from "node:path";
 import { EnquiryInputSchema } from "@/lib/enquiries/schema";
 import { buildEnquiry, EnquiryRejectedError, newReference, shareTokenFrom } from "@/lib/server/enquiries";
 import { FileEnquiryStore, StorageUnavailableError, SupabaseEnquiryStore } from "@/lib/server/enquiryStore";
-import { encodeShareToken } from "@/lib/designs/share";
+import { decodeShareToken, encodeShareToken } from "@/lib/designs/share";
 import { rateLimit } from "@/lib/server/rateLimit";
 
 const products = [
@@ -48,6 +48,17 @@ test("enquiry: panel details come from the server catalogue; unknown codes are r
   assert.throws(() => buildEnquiry(EnquiryInputSchema.parse({ ...valid, design: { ...valid.design, modelId: "unknown" } }), products), EnquiryRejectedError);
   assert.equal(shareTokenFrom("https://evil.test/?design=notatoken"), undefined);
   assert.notEqual(newReference(), newReference());
+});
+
+test("enquiry: stored design link always matches the checked panel codes (QA)", () => {
+  // A link that shows different panels from the ones submitted must not be stored as-is.
+  const otherLink = `https://x.test/?design=${encodeShareToken({ modelId: "demo-l-island", selections: { lower_cabinets: "DEMO-WD-001" }, camera: { alpha: 1, beta: 1, radius: 3, target: [0, 1, 0] } })}`;
+  const e = buildEnquiry(EnquiryInputSchema.parse({ ...valid, design: { ...valid.design, shareUrl: otherLink } }), products);
+  const shown = decodeShareToken(e.design.shareToken);
+  assert.deepEqual(shown?.selections, { lower_cabinets: "1-026-T18-C-J-1" });
+  assert.equal(shown?.camera?.radius, 3, "camera from the visitor's link is kept");
+  const noLink = buildEnquiry(EnquiryInputSchema.parse({ ...valid, design: { ...valid.design, shareUrl: undefined } }), products);
+  assert.deepEqual(decodeShareToken(noLink.design.shareToken)?.selections, { lower_cabinets: "1-026-T18-C-J-1" });
 });
 
 test("file store: saves, confirms, lists newest first, updates, survives concurrent writes", async () => {

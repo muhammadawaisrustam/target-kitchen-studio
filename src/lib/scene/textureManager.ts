@@ -3,7 +3,9 @@ import { Scene, Texture } from "./babylon";
 interface Entry {
   promise: Promise<Texture>;
   texture?: Texture;
-  users: Set<string>;
+  /** Acquire count per user. A count (not a set) because one region can hold the same texture
+   *  twice for a moment, e.g. picking A, then B, then A again before B has downloaded. */
+  users: Map<string, number>;
   lastUsed: number;
 }
 
@@ -34,7 +36,7 @@ export class TextureManager {
     const key = TextureManager.key(url, repeatsPerMetre, rotationRad);
     let entry = this.cache.get(key);
     if (!entry) {
-      const created: Entry = { users: new Set(), lastUsed: Date.now(), promise: Promise.resolve(null as never) };
+      const created: Entry = { users: new Map(), lastUsed: Date.now(), promise: Promise.resolve(null as never) };
       created.promise = new Promise<Texture>((resolve, reject) => {
         let settled = false;
         const timer = setTimeout(() => {
@@ -75,7 +77,7 @@ export class TextureManager {
       entry = created;
       this.cache.set(key, entry);
     }
-    entry.users.add(user);
+    entry.users.set(user, (entry.users.get(user) ?? 0) + 1);
     entry.lastUsed = Date.now();
     return entry.promise;
   }
@@ -83,7 +85,9 @@ export class TextureManager {
   release(url: string, repeatsPerMetre: number, rotationRad: number, user: string) {
     const entry = this.cache.get(TextureManager.key(url, repeatsPerMetre, rotationRad));
     if (!entry) return;
-    entry.users.delete(user);
+    const n = (entry.users.get(user) ?? 0) - 1;
+    if (n > 0) entry.users.set(user, n);
+    else entry.users.delete(user);
     entry.lastUsed = Date.now();
     this.evict();
   }

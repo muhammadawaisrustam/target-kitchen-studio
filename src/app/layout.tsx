@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Target Kitchen Studio (Prototype)",
-  description: "Prototype 3D kitchen visualiser for decorative wood panels. Demonstration data only.",
+  description: "Prototype 3D kitchen visualiser for decorative wood panels.",
   robots: { index: false, follow: false },
 };
 

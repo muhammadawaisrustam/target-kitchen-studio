@@ -105,6 +105,7 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
             {chosen.map((r) => (
               <li key={r.region}>
                 {r.regionLabel}: <span className="font-mono text-[13px] text-ink">{r.panelCode}</span> {r.productName}
+                {r.isDemo && <span className="ml-1 rounded bg-warn-soft px-1 text-[11px] text-warn">DEMO</span>}
               </li>
             ))}
           </ul>

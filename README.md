@@ -22,7 +22,7 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 - Camera: drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan, arrow keys when the canvas is focused, zoom buttons, reset, and Front / Side / Top / 3D views.
 - Searchable catalogue (Item ID with or without dashes, decor name, collection, colour, finish, brand, board), brand/board/collection/colour/finish filters, and server-side paging from `/api/catalogue`. Tested with 600 records.
 - PDF importer for brand catalogues laid out like the Kastamonu profile (see "Importing a brand PDF").
-- Responsive layout for desktop, tablet and phone.
+- Responsive layout for desktop, tablet and phone. On phones the page scrolls and the 3D view and region cards stay pinned at the top, so the panel list has the rest of the screen.
 - Render-on-demand: the GPU stops drawing about 1.5 s after the last interaction.
 - **Saved designs with variants** (Designs button): name a design, add variants (each a full set of panel choices, layout and camera view), switch between them, rename, delete. If a variant has unsaved changes, switching asks first. Designs are kept in the browser (see "Where data is stored").
 - **Summary & share**: a product-code summary per region (Item ID, decor, brand, board, finish, sheet size), a side-by-side comparison of saved variants, copy as text, CSV download, print, and a share link that reopens the exact design on any device.
@@ -55,6 +55,16 @@ CATALOGUE_FILE=data/demo-catalogue.json npm start   # demo data, then:
 npm run test:e2e     # browser checks against the DEMO catalogue (set BASE_URL to change)
 ```
 
+Independent QA run of all 14 acceptance criteria (needs the real-data server with `ADMIN_PASSWORD` and `DATA_DIR`, plus the 600-record stress server on port 3001):
+
+```bash
+ADMIN_PASSWORD=some-long-test-password DATA_DIR=/tmp/tks-qa npm start
+CATALOGUE_FILE=data/stress-catalogue.json PORT=3001 DATA_DIR=/tmp/tks-stress npm start
+QA_DATA_DIR=/tmp/tks-qa ADMIN_PASSWORD=some-long-test-password npm run test:qa
+```
+
+The QA report with every test, its result and the fixes made is in `docs/qa-report.md`.
+
 The browser checks need Playwright's Chromium (`npx playwright install chromium` once). Screenshots and `results.json` go to `e2e-screenshots/`.
 
 Latest results (24 Oct 2026, headless Chromium with software WebGL):
@@ -72,7 +82,7 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | T5 second region keeps the first region's panel | pass |
 | T6 region summary shows the right codes | pass |
 | T10 missing texture shows a warning and a placeholder, scene keeps working | pass |
-| T12 phone 390×844: no horizontal scroll, tap select, one-finger touch rotate | pass |
+| T12 phone 390×844: no horizontal scroll, tap select, one-finger touch rotate | pass (QA, 24 Oct: the panel list was squashed to 24 px on phones; fixed, see `docs/qa-report.md`) |
 | T14 every product is DEMO-coded and the disclaimer is shown | pass |
 | Click a cabinet in 3D selects its region; reset design; switching layouts; no page errors | pass |
 

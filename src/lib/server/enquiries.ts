@@ -4,7 +4,7 @@ import { codeKey } from "@/lib/catalogue/schema";
 import { getModel } from "@/lib/models/registry";
 import { REGION_IDS, REGION_LABELS } from "@/lib/models/regions";
 import type { Enquiry, EnquiryInput } from "@/lib/enquiries/schema";
-import { decodeShareToken, SHARE_PARAM } from "@/lib/designs/share";
+import { decodeShareToken, encodeShareToken, SHARE_PARAM } from "@/lib/designs/share";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
 
@@ -46,6 +46,16 @@ export function buildEnquiry(input: EnquiryInput, products: Product[], now = new
     if (!p) throw new EnquiryRejectedError(`Panel ${code} is not in the current catalogue. Choose another panel for ${REGION_LABELS[region]}.`);
     return [{ region, regionLabel: REGION_LABELS[region], panelCode: p.panelCode, productName: p.productName, brand: p.brand, board: p.board, finish: p.finish, isDemo: p.isDemo }];
   });
+  // The stored link is rebuilt from the checked panel codes, so "open design" in the admin always shows
+  // exactly the panels listed in the enquiry. Only the camera is taken from the visitor's link.
+  const camera = input.design.shareUrl ? decodeShareToken(shareTokenFrom(input.design.shareUrl))?.camera : undefined;
+  const shareToken = encodeShareToken({
+    modelId: model.id,
+    selections: Object.fromEntries(items.map((i) => [i.region, i.panelCode])),
+    camera,
+    designName: input.design.designName,
+    variantName: input.design.variantName,
+  });
   const iso = now.toISOString();
   return {
     id: crypto.randomUUID(),
@@ -55,7 +65,7 @@ export function buildEnquiry(input: EnquiryInput, products: Product[], now = new
     status: "new",
     contact: { name: input.name, phone: input.phone, email: input.email, company: input.company, location: input.location, preferredContact: input.preferredContact },
     message: input.message,
-    design: { modelId: model.id, modelName: model.name, designName: input.design.designName, variantName: input.design.variantName, shareToken: shareTokenFrom(input.design.shareUrl), items },
+    design: { modelId: model.id, modelName: model.name, designName: input.design.designName, variantName: input.design.variantName, shareToken, items },
     containsDemoPanels: items.some((i) => i.isDemo),
   };
 }
