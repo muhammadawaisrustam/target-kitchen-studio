@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { SummaryRow } from "@/lib/designs/summary";
 import type { Selections } from "@/lib/designs/model";
 import Dialog from "./Dialog";
+import { whatsAppUrl } from "@/lib/enquiries/whatsapp";
 
 interface Props {
   rows: SummaryRow[];
@@ -26,6 +27,7 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [state, setState] = useState<State>({ kind: "editing" });
   const chosen = rows.filter((r) => r.panelCode);
+  const waBase = { rows, layoutName, designName, variantName, shareUrl, name: form.name, location: form.location, message: form.message };
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const localCheck = (): Record<string, string> => {
@@ -74,6 +76,9 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
           <p className="rounded-xl bg-accent-soft px-4 py-3">
             Reference <span className="font-mono font-semibold" data-testid="quote-reference">{state.reference}</span>
           </p>
+          <a href={whatsAppUrl({ ...waBase, reference: state.reference })} target="_blank" rel="noopener noreferrer" className="inline-block rounded-full bg-[#25D366] px-4 py-2 text-sm font-medium text-white" data-testid="quote-whatsapp-after">
+            Continue on WhatsApp
+          </a>
           <p className="text-sm text-muted">Please keep this reference if you contact us about this kitchen. A copy of your panel choices was stored with it.</p>
           <button type="button" onClick={onClose} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">
             Back to the kitchen
@@ -186,10 +191,20 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
           </p>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button type="submit" disabled={state.kind === "sending"} className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-white disabled:opacity-60" data-testid="q-submit">
             {state.kind === "sending" ? "Sending…" : "Send enquiry"}
           </button>
+          <a
+            href={chosen.length ? whatsAppUrl(waBase) : undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!chosen.length}
+            className="rounded-full bg-[#25D366] px-5 py-2 text-sm font-medium text-white aria-disabled:opacity-60"
+            data-testid="q-whatsapp"
+          >
+            Enquire on WhatsApp
+          </a>
           <p className="text-xs text-muted">No price is shown online; the sales team prepares the quotation.</p>
         </div>
       </form>
