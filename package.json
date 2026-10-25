@@ -18,7 +18,8 @@
     "test:e2e:brands": "node scripts/e2e-brands.mjs",
     "test:e2e:stage3": "node scripts/e2e-stage3.mjs",
     "test:e2e:email": "node scripts/e2e-quote-email.mjs",
-    "test:qa": "node scripts/qa-acceptance.mjs"
+    "test:qa": "node scripts/qa-acceptance.mjs",
+    "test:e2e:layouts": "node --import tsx scripts/e2e-layouts.mjs"
   },
   "engines": {
     "node": ">=20.9"

@@ -9,7 +9,7 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 ## What works today
 
 - A real WebGL 3D kitchen (Babylon.js), built from geometry: cabinet carcasses, doors, drawers, handles, plinths, worktops, splashback, hob, sink, hood, oven, island with waterfall ends, open shelves, stools and pendants.
-- Two layouts from a model registry: **L-shaped with island** (5 regions) and **Straight** (4 regions).
+- Six layouts from a model registry: **L-shaped with island**, **Straight**, **U-shaped**, **Galley** (two parallel runs with a breakfast bar), **L-shaped with peninsula** and **Straight with island**. Each starts with its own real panel combination. All are illustrative prototypes, not measured designs.
 - Separate material regions: upper cabinets, lower cabinets, tall units, kitchen island, open shelves. Changing a panel only changes the selected region.
 - Select a region from the cards under the viewport or by clicking a cabinet in 3D.
 - Live material switching with:
@@ -74,6 +74,7 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | --- | --- |
 | Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
 | Browser checks, designs/sharing/quotes/admin (save and reload a design, variants and the unsaved-changes prompt, summary and variant comparison, CSV, share link in a fresh browser with the same codes and camera, unknown code in a link reported and not substituted, quote validation, server error and network error never show success, stored enquiry has server-checked panel details, unknown codes and spam rejected, admin locked without sign-in, wrong password refused, password not in page scripts, status change saved, cross-site change refused, CSV export, import blocked on errors, clean import goes live and is removed, admin off without a password, phone layout) | 18/18 pass |
+| Browser checks, all 6 layouts (each loads with its starting panels in every region, changing one region leaves the others alone, front/top/reset views, share link keeps the layout, phone layout), on real and on DEMO data | 22/22 pass on each |
 | Browser checks, DEMO catalogue | 20/20 pass |
 | Browser checks, quote email with no writable disk (as on Netlify): the request is emailed to info@targetqatar.com with the reference, all panel codes, a design link and escaped customer text, and success is shown; when the email service refuses and nothing is stored, the visitor sees an error and the WhatsApp button opens a chat with +974 7765 7373 holding the kitchen, codes and design link | 3/3 pass |
 | Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import, quotation email (content and escaping, Resend, SMTP against a stand-in mail server, stored-or-emailed rule), WhatsApp message and link | 40/40 pass |
@@ -107,6 +108,7 @@ scripts/
   e2e.mjs                      browser acceptance checks (DEMO data)
   e2e-brands.mjs               browser checks on real brand data
   e2e-stage3.mjs               browser checks for designs, sharing, quotes and admin
+  e2e-layouts.mjs              browser checks for every kitchen layout (npm run test:e2e:layouts)
 supabase/schema.sql        optional table for storing enquiries in Supabase
 src/
   app/                     Next.js pages and the /api/catalogue route
