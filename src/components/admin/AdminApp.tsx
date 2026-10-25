@@ -267,6 +267,19 @@ function EnquiryRow({ e, open, onToggle, onUpdate, saving }: { e: Enquiry; open:
                     </li>
                   ))}
                 </ul>
+                {e.source === "photo" && (
+                  <div className="mt-2 text-sm" data-testid="enquiry-photo">
+                    <p className="text-muted">Made on the customer&apos;s own kitchen photo. Approximate preview; the original photo was not uploaded.</p>
+                    {e.photo?.preview ? (
+                      <a href={`/api/admin/enquiries/${e.id}/preview`} target="_blank" rel="noopener noreferrer" className="mt-1 block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/api/admin/enquiries/${e.id}/preview`} alt={`Preview attached to ${e.reference}`} className="max-h-56 rounded-lg border border-line" data-testid="enquiry-preview" />
+                      </a>
+                    ) : (
+                      <p className="mt-1 text-xs text-muted">No preview image attached.</p>
+                    )}
+                  </div>
+                )}
                 {e.design.shareToken && (
                   <a href={`/?design=${e.design.shareToken}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-accent hover:underline">
                     Open this design in the studio

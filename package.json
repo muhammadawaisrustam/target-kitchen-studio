@@ -17,7 +17,8 @@
     "catalogue:import-pdf": "node scripts/import-brand-pdf.mjs",
     "test:e2e:brands": "node scripts/e2e-brands.mjs",
     "test:e2e:stage3": "node scripts/e2e-stage3.mjs",
-    "test:qa": "node scripts/qa-acceptance.mjs"
+    "test:qa": "node scripts/qa-acceptance.mjs",
+    "test:e2e:photo": "node scripts/e2e-photo.mjs"
   },
   "engines": {
     "node": ">=20.9"

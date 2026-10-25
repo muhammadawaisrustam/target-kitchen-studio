@@ -1,0 +1,215 @@
+{
+  "note": "My Kitchen Photo browser checks (scripts/e2e-photo.mjs), headless Chromium with software WebGL, 25 Oct 2026. 'realPhoto' used a kitchen photo from the Target-Kastamonu brand PDF; 'syntheticPhoto' used the generated test kitchen.",
+  "realPhoto": {
+    "when": "2026-10-25T08:10:55.942Z",
+    "base": "http://localhost:3000",
+    "photo": "kitchen-front.jpg",
+    "results": [
+      {
+        "id": "T1",
+        "name": "Upload a valid kitchen photo (JPG, PNG, WebP), preview before processing, privacy note",
+        "ok": true,
+        "detail": "JPG 1113\u00d71024 for editing; PNG and WebP also open; privacy note shown before processing",
+        "ms": 6876
+      },
+      {
+        "id": "T2",
+        "name": "Invalid formats, HEIC, fake and oversized files are refused with clear messages; EXIF rotation corrected",
+        "ok": true,
+        "detail": "pdf, fake jpg, HEIC, 21 MB and 120\u00d790 refused with specific messages; sideways phone photo (EXIF 6) shown upright 800\u00d7736",
+        "ms": 6118
+      },
+      {
+        "id": "T3",
+        "name": "Select cabinet surfaces manually (smart select, brush, shape)",
+        "ok": true,
+        "detail": "upper 8.8% (smart select), lower 18.1% (brush + smart), other 0.88% (shape)",
+        "ms": 6397
+      },
+      {
+        "id": "T4",
+        "name": "Correct mistakes: eraser, remove mode, protect, clear, undo/redo",
+        "ok": true,
+        "detail": "wall mistake undone/redone and removed; eraser 8.8% \u2192 8.6%; 19648 px protected and excluded",
+        "ms": 3371
+      },
+      {
+        "id": "T5",
+        "name": "Apply a real Target (Kastamonu) panel texture to the selected surface",
+        "ok": true,
+        "detail": "1-668-T18-C-L-27 CANALETTO WALNUT from /brands/kastamonu/textures/1-668.jpg; labelled \u201cApproximate visual preview\u201d",
+        "ms": 2171
+      },
+      {
+        "id": "T6",
+        "name": "Areas outside the masks are unchanged by compositing",
+        "ok": true,
+        "detail": "827026 unselected pixels identical to the photo; 97998 of 312686 selected pixels changed",
+        "ms": 81
+      },
+      {
+        "id": "T7",
+        "name": "Different panel codes on different regions; a missing texture is refused, not substituted",
+        "ok": true,
+        "detail": "upper 1-668-T18-C-L-27, lower 1-001-T18-C-J-1 (plain colour), other 1-026-T18-C-J-1; broken texture 1-525 refused with a warning",
+        "ms": 4193
+      },
+      {
+        "id": "T8",
+        "name": "Reset restores the original photo (and Undo brings the work back)",
+        "ok": true,
+        "detail": "screen identical to the uploaded photo after Reset; Undo restored all three regions",
+        "ms": 682
+      },
+      {
+        "id": "T9",
+        "name": "Compare original and preview: toggle, slider, zoom, full size",
+        "ok": true,
+        "detail": "original label, compare slider at 30% clips the original, zoom 156%, full-size view opens",
+        "ms": 1431
+      },
+      {
+        "id": "T10",
+        "name": "Design summary lists the selected panel codes by region",
+        "ok": true,
+        "detail": "upper_cabinets: 1-668-T18-C-L-27, lower_cabinets: 1-001-T18-C-J-1, other_panels: 1-026-T18-C-J-1",
+        "ms": 758
+      },
+      {
+        "id": "T11",
+        "name": "Save the design (reopens with the same codes) and submit a quote with an attached preview",
+        "ok": true,
+        "detail": "saved and reopened \u201cE2E villa photo\u201d; quote ENQ-20261025-9HS4H4; stored with 3 checked codes; 197 KB preview kept privately; 401 without sign-in, 200 for a signed-in admin",
+        "ms": 5521
+      },
+      {
+        "id": "T12",
+        "name": "Works on a phone (390\u00d7844 touch): no sideways scroll, draw with a finger, controls reachable",
+        "ok": true,
+        "detail": "no horizontal scroll; tap smart-select 6.4%; texture applied; photo area 279px tall",
+        "ms": 6134
+      },
+      {
+        "id": "T13",
+        "name": "The 3D configurator still works (switch modes, 3D renders, panel applies)",
+        "ok": true,
+        "detail": "3D ready, lower cabinets 21 meshes, 1-669 applied in 3D; photo work kept when switching back",
+        "ms": 8360
+      },
+      {
+        "id": "T14",
+        "name": "No unconfigured AI or backend is reported as working",
+        "ok": true,
+        "detail": "\u201cAutomatic cabinet detection is not set up in this version.\u201d shown; no detection claims; server failure shows an error, never success",
+        "ms": 23675
+      }
+    ],
+    "pageErrors": []
+  },
+  "syntheticPhoto": {
+    "when": "2026-10-25T08:17:04.063Z",
+    "base": "http://localhost:3000",
+    "photo": "synthetic",
+    "results": [
+      {
+        "id": "T1",
+        "name": "Upload a valid kitchen photo (JPG, PNG, WebP), preview before processing, privacy note",
+        "ok": true,
+        "detail": "JPG 1400\u00d71000 for editing (synthetic test kitchen); PNG and WebP also open; privacy note shown before processing",
+        "ms": 5886
+      },
+      {
+        "id": "T2",
+        "name": "Invalid formats, HEIC, fake and oversized files are refused with clear messages; EXIF rotation corrected",
+        "ok": true,
+        "detail": "pdf, fake jpg, HEIC, 21 MB and 120\u00d790 refused with specific messages; sideways phone photo (EXIF 6) shown upright 800\u00d7571",
+        "ms": 5763
+      },
+      {
+        "id": "T3",
+        "name": "Select cabinet surfaces manually (smart select, brush, shape)",
+        "ok": true,
+        "detail": "upper 11.9% (smart select), lower 9.2% (brush + smart), other 0.71% (shape)",
+        "ms": 7619
+      },
+      {
+        "id": "T4",
+        "name": "Correct mistakes: eraser, remove mode, protect, clear, undo/redo",
+        "ok": true,
+        "detail": "wall mistake undone/redone and removed; eraser 11.9% \u2192 11.7%; 36012 px protected and excluded",
+        "ms": 4205
+      },
+      {
+        "id": "T5",
+        "name": "Apply a real Target (Kastamonu) panel texture to the selected surface",
+        "ok": true,
+        "detail": "1-668-T18-C-L-27 CANALETTO WALNUT from /brands/kastamonu/textures/1-668.jpg; labelled \u201cApproximate visual preview\u201d",
+        "ms": 2021
+      },
+      {
+        "id": "T6",
+        "name": "Areas outside the masks are unchanged by compositing",
+        "ok": true,
+        "detail": "1098020 unselected pixels identical to the photo; 163708 of 301980 selected pixels changed",
+        "ms": 99
+      },
+      {
+        "id": "T7",
+        "name": "Different panel codes on different regions; a missing texture is refused, not substituted",
+        "ok": true,
+        "detail": "upper 1-668-T18-C-L-27, lower 1-001-T18-C-J-1 (plain colour), other 1-026-T18-C-J-1; broken texture 1-525 refused with a warning",
+        "ms": 4164
+      },
+      {
+        "id": "T8",
+        "name": "Reset restores the original photo (and Undo brings the work back)",
+        "ok": true,
+        "detail": "screen identical to the uploaded photo after Reset; Undo restored all three regions",
+        "ms": 830
+      },
+      {
+        "id": "T9",
+        "name": "Compare original and preview: toggle, slider, zoom, full size",
+        "ok": true,
+        "detail": "original label, compare slider at 30% clips the original, zoom 156%, full-size view opens",
+        "ms": 1284
+      },
+      {
+        "id": "T10",
+        "name": "Design summary lists the selected panel codes by region",
+        "ok": true,
+        "detail": "upper_cabinets: 1-668-T18-C-L-27, lower_cabinets: 1-001-T18-C-J-1, other_panels: 1-026-T18-C-J-1",
+        "ms": 755
+      },
+      {
+        "id": "T11",
+        "name": "Save the design (reopens with the same codes) and submit a quote with an attached preview",
+        "ok": true,
+        "detail": "saved and reopened \u201cE2E villa photo\u201d; quote ENQ-20261025-L8QX3M; stored with 3 checked codes; 72 KB preview kept privately; 401 without sign-in, 200 for a signed-in admin",
+        "ms": 5282
+      },
+      {
+        "id": "T12",
+        "name": "Works on a phone (390\u00d7844 touch): no sideways scroll, draw with a finger, controls reachable",
+        "ok": true,
+        "detail": "no horizontal scroll; tap smart-select 4.0%; texture applied; photo area 279px tall",
+        "ms": 5822
+      },
+      {
+        "id": "T13",
+        "name": "The 3D configurator still works (switch modes, 3D renders, panel applies)",
+        "ok": true,
+        "detail": "3D ready, lower cabinets 21 meshes, 1-669 applied in 3D; photo work kept when switching back",
+        "ms": 8729
+      },
+      {
+        "id": "T14",
+        "name": "No unconfigured AI or backend is reported as working",
+        "ok": true,
+        "detail": "\u201cAutomatic cabinet detection is not set up in this version.\u201d shown; no detection claims; server failure shows an error, never success",
+        "ms": 26727
+      }
+    ],
+    "pageErrors": []
+  }
+}

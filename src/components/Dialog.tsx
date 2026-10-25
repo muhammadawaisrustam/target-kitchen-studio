@@ -32,11 +32,12 @@ export default function Dialog({ title, onClose, children, testId, wide, footer 
       else if (!e.shiftKey && document.activeElement === z) (e.preventDefault(), a.focus());
     };
     document.addEventListener("keydown", onKey);
-    const main = document.getElementById("studio-root");
-    main?.setAttribute("inert", "");
+    // Both modes' main areas become inert while a dialog is open.
+    const roots = ["studio-root", "photo-root"].map((id) => document.getElementById(id)).filter((el): el is HTMLElement => !!el && !el.hasAttribute("inert"));
+    roots.forEach((el) => el.setAttribute("inert", ""));
     return () => {
       document.removeEventListener("keydown", onKey);
-      main?.removeAttribute("inert");
+      roots.forEach((el) => el.removeAttribute("inert"));
       opener?.focus?.();
     };
   }, []);

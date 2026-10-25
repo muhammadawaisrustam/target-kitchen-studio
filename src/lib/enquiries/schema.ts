@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { REGION_IDS } from "@/lib/models/regions";
+import { PHOTO_REGION_IDS } from "@/lib/photo/regions";
 
 /** What the quotation form sends. Validated again on the server; the browser check is only a convenience. */
 const optionalText = (max: number) =>
@@ -9,6 +10,9 @@ const optionalText = (max: number) =>
     .max(max)
     .optional()
     .transform((v) => (v ? v : undefined));
+
+/** Data-URL length allowed for an attached preview (about 1.5 MB of JPEG). */
+export const MAX_PREVIEW_DATA_URL = 2_100_000;
 
 export const PHONE_PATTERN = /^\+?[0-9][0-9 ()-]{6,19}$/;
 
@@ -24,17 +28,40 @@ export const EnquiryInputSchema = z
     consent: z.literal(true, { error: "Please confirm we may contact you about this enquiry." }),
     /** Hidden field: people leave it empty, simple bots fill it in. */
     website: z.string().max(200).optional(),
-    design: z.object({
-      modelId: z.string().min(1).max(60),
-      designName: optionalText(80),
-      variantName: optionalText(60),
-      shareUrl: optionalText(3500).refine((v) => !v || /^https?:\/\//.test(v), "invalid link"),
-      selections: z
-        .partialRecord(z.enum(REGION_IDS), z.string().trim().min(1).max(40))
-        .refine((s) => Object.keys(s).length > 0, "Choose at least one panel before requesting a quote."),
-    }),
+    /** A design from the 3D studio. */
+    design: z
+      .object({
+        modelId: z.string().min(1).max(60),
+        designName: optionalText(80),
+        variantName: optionalText(60),
+        shareUrl: optionalText(3500).refine((v) => !v || /^https?:\/\//.test(v), "invalid link"),
+        selections: z
+          .partialRecord(z.enum(REGION_IDS), z.string().trim().min(1).max(40))
+          .refine((s) => Object.keys(s).length > 0, "Choose at least one panel before requesting a quote."),
+      })
+      .optional(),
+    /** A design made on the customer's own kitchen photo ("My Kitchen Photo"). */
+    photo: z
+      .object({
+        designId: optionalText(40),
+        designName: optionalText(80),
+        regions: z
+          .array(z.object({ region: z.enum(PHOTO_REGION_IDS), panelCode: z.string().trim().min(1).max(40) }))
+          .min(1, "Choose a panel for at least one selected area before requesting a quote.")
+          .max(PHOTO_REGION_IDS.length)
+          .refine((list) => new Set(list.map((r) => r.region)).size === list.length, "Each area can only be listed once."),
+        /** Optional JPEG preview, only sent when the customer ticks the box to attach it. */
+        previewJpeg: z
+          .string()
+          .max(MAX_PREVIEW_DATA_URL, "The preview image is too large.")
+          .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/, "The preview image is not a valid JPEG.")
+          .optional(),
+      })
+      .optional(),
   })
   .superRefine((v, ctx) => {
+    if (!v.design && !v.photo) ctx.addIssue({ code: "custom", path: ["design"], message: "Choose at least one panel before requesting a quote." });
+    if (v.design && v.photo) ctx.addIssue({ code: "custom", path: ["design"], message: "Send either a 3D design or a photo design, not both." });
     if (!v.phone && !v.email) ctx.addIssue({ code: "custom", path: ["phone"], message: "Please give a phone number or an email address." });
     if (v.preferredContact === "email" && !v.email) ctx.addIssue({ code: "custom", path: ["email"], message: "Please add an email address, or choose another way to contact you." });
     if ((v.preferredContact === "phone" || v.preferredContact === "whatsapp") && !v.phone)
@@ -69,6 +96,10 @@ export interface Enquiry {
   /** shareToken reopens the design: /?design=<shareToken>. Only a valid token is kept, never a free-form URL. */
   design: { modelId: string; modelName: string; designName?: string; variantName?: string; shareToken?: string; items: EnquiryItem[] };
   containsDemoPanels: boolean;
+  /** "photo" for designs made on the customer's own kitchen photo. Missing on older records (3D). */
+  source?: "3d" | "photo";
+  /** Photo designs only. The preview image, if attached, is stored privately and served only to signed-in admins. */
+  photo?: { designId?: string; preview?: { contentType: "image/jpeg"; bytes: number } };
 }
 
 export const EnquiryUpdateSchema = z
@@ -80,7 +111,7 @@ export type EnquiryUpdate = z.infer<typeof EnquiryUpdateSchema>;
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {
-    const key = issue.path[0] === "design" ? "design" : String(issue.path[0] ?? "form");
+    const key = issue.path[0] === "design" || issue.path[0] === "photo" ? "design" : String(issue.path[0] ?? "form");
     out[key] ??= issue.message;
   }
   return out;

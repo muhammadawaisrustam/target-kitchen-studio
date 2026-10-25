@@ -1,19 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import type { SummaryRow } from "@/lib/designs/summary";
 import type { Selections } from "@/lib/designs/model";
+import type { PhotoRegionId } from "@/lib/photo/regions";
 import Dialog from "./Dialog";
 
+/** One line of the panel list (3D regions or photo regions). */
+export interface QuoteRow {
+  region: string;
+  regionLabel: string;
+  panelCode: string | null;
+  productName?: string;
+  isDemo?: boolean;
+}
+
+/** A design made on the customer's own photo. */
+export interface PhotoQuote {
+  designId?: string;
+  regions: { region: PhotoRegionId; panelCode: string }[];
+  /** Builds the JPEG preview as a data URL; only called if the customer chooses to attach it. */
+  getPreview: () => Promise<string>;
+}
+
 interface Props {
-  rows: SummaryRow[];
-  modelId: string;
+  rows: QuoteRow[];
+  modelId?: string;
   layoutName: string;
-  selections: Selections;
+  selections?: Selections;
   designName?: string;
   variantName?: string;
-  shareUrl: string;
+  shareUrl?: string;
+  photo?: PhotoQuote;
   onClose: () => void;
+  backLabel?: string;
 }
 
 type Form = { name: string; phone: string; email: string; company: string; location: string; preferredContact: "" | "phone" | "whatsapp" | "email"; message: string; consent: boolean; website: string };
@@ -21,8 +40,9 @@ const EMPTY: Form = { name: "", phone: "", email: "", company: "", location: "",
 
 type State = { kind: "editing" } | { kind: "sending" } | { kind: "sent"; reference: string; createdAt: string } | { kind: "failed"; message: string };
 
-export default function QuoteDialog({ rows, modelId, layoutName, selections, designName, variantName, shareUrl, onClose }: Props) {
+export default function QuoteDialog({ rows, modelId, layoutName, selections, designName, variantName, shareUrl, photo, onClose, backLabel = "Back to the kitchen" }: Props) {
   const [form, setForm] = useState<Form>(EMPTY);
+  const [attachPreview, setAttachPreview] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [state, setState] = useState<State>({ kind: "editing" });
   const chosen = rows.filter((r) => r.panelCode);
@@ -43,6 +63,15 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
     setErrors(local);
     if (Object.keys(local).length) return;
     setState({ kind: "sending" });
+    let previewJpeg: string | undefined;
+    if (photo && attachPreview) {
+      try {
+        previewJpeg = await photo.getPreview();
+      } catch {
+        setState({ kind: "failed", message: "The preview image could not be prepared, so nothing was sent. Untick “attach preview” to send without it, or try again." });
+        return;
+      }
+    }
     try {
       const res = await fetch("/api/enquiries", {
         method: "POST",
@@ -50,7 +79,9 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
         body: JSON.stringify({
           ...form,
           preferredContact: form.preferredContact || undefined,
-          design: { modelId, designName, variantName, shareUrl, selections },
+          ...(photo
+            ? { photo: { designId: photo.designId, designName, regions: photo.regions, previewJpeg } }
+            : { design: { modelId, designName, variantName, shareUrl, selections } }),
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { reference?: string; createdAt?: string; error?: string; fields?: Record<string, string> };
@@ -76,7 +107,7 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
           </p>
           <p className="text-sm text-muted">Please keep this reference if you contact us about this kitchen. A copy of your panel choices was stored with it.</p>
           <button type="button" onClick={onClose} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">
-            Back to the kitchen
+            {backLabel}
           </button>
         </div>
       </Dialog>
@@ -171,6 +202,21 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
           <label htmlFor="q-website">Website</label>
           <input id="q-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => set("website", e.target.value)} />
         </div>
+
+        {photo && (
+          <div className="rounded-xl border border-line p-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={attachPreview} onChange={(e) => setAttachPreview(e.target.checked)} className="mt-1" data-testid="q-attach-preview" />
+              <span>
+                Attach my preview image <span className="text-muted">(optional)</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  The preview shows your kitchen photo with the chosen panels. If you tick this, it is sent with your enquiry and stored privately for our sales team only. If you leave it unticked,
+                  only the panel codes are sent. Your original photo is never uploaded.
+                </span>
+              </span>
+            </label>
+          </div>
+        )}
 
         <div>
           <label className="flex items-start gap-2 text-sm">

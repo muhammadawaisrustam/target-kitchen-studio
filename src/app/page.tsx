@@ -1,5 +1,5 @@
-import Studio from "@/components/Studio";
+import KitchenApp from "@/components/KitchenApp";
 
 export default function Home() {
-  return <Studio />;
+  return <KitchenApp />;
 }

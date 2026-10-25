@@ -16,3 +16,10 @@ create index if not exists enquiries_created_at_idx on public.enquiries (created
 -- Row Level Security on, with no policies: the public (anon) key can neither read nor write.
 -- Only the server, using the service role key, can access the table.
 alter table public.enquiries enable row level security;
+
+-- Optional: private storage for preview images that customers choose to attach to a quote from
+-- "My Kitchen Photo". The bucket is PRIVATE (public = false): images are only read by the server
+-- with the service role key and shown to signed-in admins. Never make this bucket public.
+insert into storage.buckets (id, name, public)
+values ('enquiry-previews', 'enquiry-previews', false)
+on conflict (id) do update set public = false;

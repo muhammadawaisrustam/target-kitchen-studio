@@ -29,6 +29,8 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 - **Request a quote**: a form (name, phone or email, optional company, area, preferred contact, notes, consent). The server re-checks every panel code against the catalogue, stores the enquiry and returns a reference such as `ENQ-20261024-VU9CAQ`. The success screen only appears after the server confirms the enquiry was saved; any failure shows an error and keeps the form filled in. No prices are shown.
 - **Admin** (`/admin`, off unless `ADMIN_PASSWORD` is set): list enquiries with their panel codes, open the customer's design, set status (new, contacted, quote sent, closed), add internal notes, export CSV. Products: see every catalogue source, import products from CSV or JSON (checked first, files with errors are refused), remove an import.
 
+- **My Kitchen Photo** (second tab in the header, or `/?mode=photo`): upload a photo of your own kitchen, mark the cabinets (smart select, brush, eraser, shape, protect), apply real catalogue panels per area with a perspective guide so the grain follows each cabinet face, compare before and after, download the preview, save it in the browser and send it with a quote. Photos are processed in the browser and are never uploaded, unless the customer chooses to attach a preview to a quote. Automatic cabinet detection is not included (see the guide). Full guide, privacy notes and limitations: [`docs/photo-visualiser.md`](docs/photo-visualiser.md).
+
 Not built yet: email notification when an enquiry arrives (needs an email service and credentials), individual staff accounts, uploading new texture images from the admin page, and 3D side-by-side comparison.
 
 ## Run it locally
@@ -53,6 +55,13 @@ ADMIN_PASSWORD=some-long-test-password DATA_DIR=/tmp/tks-e2e npm start
 E2E_DATA_DIR=/tmp/tks-e2e ADMIN_PASSWORD=some-long-test-password npm run test:e2e:stage3
 CATALOGUE_FILE=data/demo-catalogue.json npm start   # demo data, then:
 npm run test:e2e     # browser checks against the DEMO catalogue (set BASE_URL to change)
+```
+
+My Kitchen Photo browser checks (14 acceptance tests, see `docs/photo-visualiser.md`):
+
+```bash
+ADMIN_PASSWORD=some-long-test-password DATA_DIR=/tmp/tks-photo npm start
+E2E_DATA_DIR=/tmp/tks-photo ADMIN_PASSWORD=some-long-test-password npm run test:e2e:photo
 ```
 
 Independent QA run of all 14 acceptance criteria (needs the real-data server with `ADMIN_PASSWORD` and `DATA_DIR`, plus the 600-record stress server on port 3001):
@@ -181,6 +190,7 @@ Everything uses free options. Nothing is sent to a paid service.
 | --- | --- | --- |
 | Saved designs and variants | The visitor's browser (localStorage) | Only on that browser and device; lost if site data is cleared. Use a share link to move a design. |
 | Share links | Inside the link itself (`/?design=…`) | No server storage. The link holds the layout, panel codes and camera, not prices or personal data. |
+| Photos in My Kitchen Photo | Only in the visitor's browser | Never uploaded. Saved photo designs use the browser's IndexedDB. A preview image is sent only if the customer ticks "attach preview" on a quote; it is stored privately (`DATA_DIR/enquiry-previews/` or a private Supabase bucket) and shown only to signed-in admins. |
 | Quotation enquiries | `DATA_DIR/enquiries.json` on the server, or Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set | The file option needs a server with a disk that is kept (any Node.js host or VPS). On Vercel or Netlify the disk is not kept, so set up Supabase (free tier, run `supabase/schema.sql`). Without either, submissions fail with an error and the visitor is told it was not sent. Back up the file or database; contact details are personal data. |
 | Products imported from admin | `DATA_DIR/catalogue/*.json` on the server | Same disk rule as above. Brand PDF imports are part of the code (`data/brands/`) and are deployed with it. |
 

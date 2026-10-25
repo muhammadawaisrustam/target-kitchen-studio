@@ -21,7 +21,7 @@ import QuoteDialog from "./QuoteDialog";
 type Selections = D.Selections;
 type DialogName = "designs" | "summary" | "quote" | null;
 
-export default function Studio() {
+export default function Studio({ modeSwitch }: { modeSwitch?: React.ReactNode } = {}) {
   const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
   const model = useMemo(() => getModel(modelId) ?? KITCHEN_MODELS[0]!, [modelId]);
   const [viewer, setViewerState] = useState<KitchenViewer | null>(null);
@@ -103,7 +103,9 @@ export default function Studio() {
     if (token) {
       const shared = decodeShareToken(token);
       // Remove the parameter so later edits are not mistaken for the shared version.
-      window.history.replaceState(null, "", window.location.pathname);
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete(SHARE_PARAM);
+      window.history.replaceState(null, "", clean.pathname + clean.search);
       if (shared && showSnapshot(shared)) {
         setSharedName({ designName: shared.designName, variantName: shared.variantName });
         setNotice(`Opened a shared design${shared.designName ? `: ${shared.designName}` : ""}${shared.variantName ? ` (${shared.variantName})` : ""}. Save it to keep a copy in this browser.`);
@@ -327,6 +329,7 @@ export default function Studio() {
               )}
             </p>
           </div>
+          {modeSwitch}
           <button type="button" onClick={() => setDialog("quote")} className="rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white sm:order-last sm:px-4 sm:py-2 sm:text-sm" data-testid="open-quote">
             Request a quote
           </button>
