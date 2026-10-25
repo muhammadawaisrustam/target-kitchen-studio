@@ -22,7 +22,7 @@ import {
   TransformNode,
   Vector3,
 } from "./babylon";
-import type { GrainAxis } from "@/lib/models/types";
+import type { GrainAxis, ProceduralBuilderId } from "@/lib/models/types";
 import { computeBoxProjectedUVs } from "./uv";
 
 type V3 = [number, number, number];
@@ -275,10 +275,14 @@ function splashback(b: Builder, f: Frame, u0: number, u1: number) {
   b.runBox("fixed__splashback", f, u0, u1, 0, 0.012, BASE_TOP + WORKTOP, UPPER_Y0, b.mats.quartz, { cast: false });
 }
 
+function hob(b: Builder, f: Frame, u0: number) {
+  const top = BASE_TOP + WORKTOP;
+  b.runBox("fixed__hob", f, u0 + 0.05, u0 + 0.55, 0.08, 0.5, top, top + 0.006, b.mats.blackGlass, { cast: false });
+}
+
 function hobAndHood(b: Builder, f: Frame, u0: number) {
   const m = b.mats;
-  const top = BASE_TOP + WORKTOP;
-  b.runBox("fixed__hob", f, u0 + 0.05, u0 + 0.55, 0.08, 0.5, top, top + 0.006, m.blackGlass, { cast: false });
+  hob(b, f, u0);
   b.runBox("fixed__hood_canopy", f, u0, u0 + 0.6, 0, 0.5, 1.62, 1.7, m.steel);
   b.runBox("fixed__hood_chimney", f, u0 + 0.17, u0 + 0.43, 0, 0.26, 1.7, 2.7, m.steel);
 }
@@ -324,7 +328,7 @@ function shelfDecor(b: Builder, f: Frame, u0: number, heights: number[]) {
   }
 }
 
-function room(b: Builder, width: number, depth: number) {
+function room(b: Builder, width: number, depth: number, opts: { rightWall?: boolean } = {}) {
   const m = b.mats;
   // Floor and the two walls. Walls are single-sided so they disappear when the camera orbits
   // behind them, giving an automatic cut-away view.
@@ -335,7 +339,14 @@ function room(b: Builder, width: number, depth: number) {
   const left = CreatePlane("fixed__wall_left", { width: depth, height: 2.7 }, b.scene);
   left.position = new Vector3(0, 1.35, -depth / 2);
   left.rotation.y = -Math.PI / 2; // normal faces +x (into the room)
-  for (const w of [back, left]) {
+  const walls = [back, left];
+  if (opts.rightWall) {
+    const right = CreatePlane("fixed__wall_right", { width: depth, height: 2.7 }, b.scene);
+    right.position = new Vector3(width, 1.35, -depth / 2);
+    right.rotation.y = Math.PI / 2; // normal faces -x (into the room)
+    walls.push(right);
+  }
+  for (const w of walls) {
     w.material = m.wall;
     w.parent = b.root;
     w.receiveShadows = true;
@@ -440,6 +451,175 @@ function buildStraight(b: Builder) {
   return { min: [0, 0, -3] as V3, max: [4.8, 2.6, 0] as V3 };
 }
 
+/** Island with cabinets facing the back wall (+z) and a seating overhang on the room side. */
+function island(b: Builder, x0: number, units: BaseKind[], zCabinetBack: number, seats: number[]) {
+  const x1 = x0 + units.length * 0.6;
+  const isl: Frame = { origin: [x0, zCabinetBack], u: [1, 0], d: [0, 1], axis: "x" };
+  units.forEach((k, i) => baseUnit(b, "island_panels", isl, i * 0.6, 0.6, k));
+  const top = BASE_TOP + WORKTOP;
+  const zFront = zCabinetBack + BASE_DEPTH + DOOR + 0.02;
+  const zSeat = zCabinetBack - 0.32;
+  b.box("island_panels__back_panel", [x0, 0, zCabinetBack - 0.02], [x1, BASE_TOP, zCabinetBack], b.mats.neutral);
+  b.box("island_panels__end_panel", [x0 - 0.02, 0, zSeat], [x0, top, zFront], b.mats.neutral, { grainAxis: "y" });
+  b.box("island_panels__end_panel", [x1, 0, zSeat], [x1 + 0.02, top, zFront], b.mats.neutral, { grainAxis: "y" });
+  b.box("fixed__worktop", [x0, BASE_TOP, zSeat], [x1, top, zFront], b.mats.quartz);
+  for (const x of seats) stool(b, x, zSeat - 0.23);
+  for (const x of seats) pendant(b, x, (zSeat + zFront) / 2);
+}
+
+/** U-shaped kitchen: three walls of cabinets, tall units on the right, open shelves above. */
+function buildUShape(b: Builder) {
+  const W = 3.6;
+  room(b, W, 4.0, { rightWall: true });
+  const back: Frame = { origin: [0, 0], u: [1, 0], d: [0, -1], axis: "x" };
+  const left: Frame = { origin: [0, 0], u: [0, -1], d: [1, 0], axis: "z" };
+  const right: Frame = { origin: [W, 0], u: [0, -1], d: [-1, 0], axis: "z" };
+  const wtDepth = BASE_DEPTH + DOOR + 0.02;
+
+  baseUnit(b, "lower_cabinets", back, 0.6, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", back, 1.2, 0.6, "sink");
+  baseUnit(b, "lower_cabinets", back, 1.8, 0.6, "doors");
+  baseUnit(b, "lower_cabinets", back, 2.4, 0.6, "drawers");
+  worktop(b, back, 0, W);
+  splashback(b, back, 0, W);
+  sink(b, back, 1.2);
+  upperUnit(b, "upper_cabinets", back, 0.6, 1.2, 2);
+  upperUnit(b, "upper_cabinets", back, 1.8, 1.2, 2);
+
+  baseUnit(b, "lower_cabinets", left, 0, 0.6, "blind");
+  baseUnit(b, "lower_cabinets", left, 0.6, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", left, 1.2, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", left, 1.8, 0.6, "door");
+  b.runBox("lower_cabinets__end_panel", left, 2.4, 2.4 + DOOR, 0, wtDepth - 0.02, 0, BASE_TOP, b.mats.neutral);
+  worktop(b, left, wtDepth, 2.4 + DOOR);
+  splashback(b, left, 0.012, 2.4);
+  hobAndHood(b, left, 1.2);
+  upperUnit(b, "upper_cabinets", left, 1.8, 0.6, 1);
+
+  baseUnit(b, "lower_cabinets", right, 0, 0.6, "blind");
+  baseUnit(b, "lower_cabinets", right, 0.6, 0.6, "doors");
+  worktop(b, right, wtDepth, 1.2);
+  splashback(b, right, 0.012, 1.2);
+  shelves(b, right, 0.62, 1.2, [1.5, 1.82, 2.14]);
+  shelfDecor(b, right, 0.6, [1.5, 1.82, 2.14]);
+  tallUnit(b, right, 1.2, 0.6, "oven");
+  tallUnit(b, right, 1.8, 0.6, "fridge");
+  b.runBox("tall_cabinets__end_panel", right, 2.4, 2.4 + DOOR, 0, BASE_DEPTH + DOOR, 0, TALL_Y1, b.mats.neutral);
+
+  b.cylinder("fixed__bowl", [0.3, BASE_TOP + WORKTOP + 0.04, -0.9], 0.08, 0.3, b.mats.ceramicDark, 32);
+  return { min: [0, 0, -3.6] as V3, max: [W, 2.6, 0] as V3 };
+}
+
+/** Galley kitchen: two parallel runs, the second with a breakfast-bar overhang. */
+function buildGalley(b: Builder) {
+  room(b, 4.2, 3.8);
+  const back: Frame = { origin: [0, 0], u: [1, 0], d: [0, -1], axis: "x" };
+  const left: Frame = { origin: [0, 0], u: [0, -1], d: [1, 0], axis: "z" };
+  const zOpp = -2.7; // back of the opposite run; its fronts face the back wall
+  const opp: Frame = { origin: [0, zOpp], u: [1, 0], d: [0, 1], axis: "x" };
+  const top = BASE_TOP + WORKTOP;
+
+  tallUnit(b, back, 0, 0.6, "fridge");
+  tallUnit(b, back, 0.6, 0.6, "oven");
+  baseUnit(b, "lower_cabinets", back, 1.2, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", back, 1.8, 0.6, "sink");
+  baseUnit(b, "lower_cabinets", back, 2.4, 0.6, "doors");
+  baseUnit(b, "lower_cabinets", back, 3.0, 0.6, "drawers");
+  b.runBox("lower_cabinets__end_panel", back, 3.6, 3.6 + DOOR, 0, BASE_DEPTH + DOOR, 0, BASE_TOP, b.mats.neutral);
+  worktop(b, back, 1.2, 3.6 + DOOR);
+  splashback(b, back, 1.2, 3.6 + DOOR);
+  sink(b, back, 1.8);
+  upperUnit(b, "upper_cabinets", back, 1.2, 1.2, 2);
+  upperUnit(b, "upper_cabinets", back, 2.4, 1.2, 2);
+
+  baseUnit(b, "lower_cabinets", opp, 0.6, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", opp, 1.2, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", opp, 1.8, 0.6, "doors");
+  baseUnit(b, "lower_cabinets", opp, 2.4, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", opp, 3.0, 0.6, "door");
+  b.runBox("lower_cabinets__back_panel", opp, 0.6, 3.6, -0.02, 0, 0, BASE_TOP, b.mats.neutral);
+  b.runBox("lower_cabinets__end_panel", opp, 0.6 - DOOR, 0.6, -0.32, BASE_DEPTH + DOOR, 0, top, b.mats.neutral);
+  b.runBox("lower_cabinets__end_panel", opp, 3.6, 3.6 + DOOR, -0.32, BASE_DEPTH + DOOR, 0, top, b.mats.neutral);
+  b.runBox("fixed__worktop", opp, 0.6, 3.6, -0.32, BASE_DEPTH + DOOR + 0.02, BASE_TOP, top, b.mats.quartz);
+  hob(b, opp, 1.2);
+  for (const x of [1.6, 2.4, 3.2]) stool(b, x, zOpp - 0.55);
+  for (const x of [1.4, 2.6]) pendant(b, x, zOpp + 0.12);
+
+  shelves(b, left, 0.95, 1.95, [1.5, 1.82, 2.14]);
+  shelfDecor(b, left, 1.0, [1.5, 1.82, 2.14]);
+  return { min: [0, 0, -3.6] as V3, max: [4.2, 2.6, 0] as V3 };
+}
+
+/** L-shaped kitchen with a peninsula breakfast bar. The peninsula uses the island region. */
+function buildPeninsula(b: Builder) {
+  room(b, 4.8, 4.2);
+  const back: Frame = { origin: [0, 0], u: [1, 0], d: [0, -1], axis: "x" };
+  const left: Frame = { origin: [0, 0], u: [0, -1], d: [1, 0], axis: "z" };
+  const xp = 3.62; // back face of the peninsula cabinets
+  const pen: Frame = { origin: [xp, 0], u: [0, -1], d: [-1, 0], axis: "z" };
+  const top = BASE_TOP + WORKTOP;
+  const wtDepth = BASE_DEPTH + DOOR + 0.02;
+
+  baseUnit(b, "lower_cabinets", back, 0.6, 0.6, "sink");
+  baseUnit(b, "lower_cabinets", back, 1.2, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", back, 1.8, 0.6, "doors");
+  baseUnit(b, "lower_cabinets", back, 2.4, 0.6, "drawers");
+  worktop(b, back, 0, xp - wtDepth);
+  splashback(b, back, 0, xp);
+  sink(b, back, 0.6);
+  hobAndHood(b, back, 1.8);
+  upperUnit(b, "upper_cabinets", back, 0.35, 0.85, 2);
+  upperUnit(b, "upper_cabinets", back, 2.4, 0.6, 1);
+  shelves(b, back, xp - 0.58, xp, [1.55, 1.9]);
+
+  baseUnit(b, "lower_cabinets", left, 0, 0.6, "blind");
+  baseUnit(b, "lower_cabinets", left, 0.6, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", left, 1.2, 0.6, "doors");
+  worktop(b, left, wtDepth, 1.8);
+  splashback(b, left, 0.012, 1.8);
+  upperUnit(b, "upper_cabinets", left, 0, 0.9, 1, UPPER_DEPTH + DOOR + 0.002);
+  tallUnit(b, left, 1.8, 0.6, "oven");
+  tallUnit(b, left, 2.4, 0.6, "fridge");
+  b.runBox("tall_cabinets__end_panel", left, 3.0, 3.0 + DOOR, 0, BASE_DEPTH + DOOR, 0, TALL_Y1, b.mats.neutral);
+
+  baseUnit(b, "island_panels", pen, 0, 0.6, "blind");
+  baseUnit(b, "island_panels", pen, 0.6, 0.6, "drawers");
+  baseUnit(b, "island_panels", pen, 1.2, 0.6, "doors");
+  baseUnit(b, "island_panels", pen, 1.8, 0.6, "drawers");
+  b.box("island_panels__back_panel", [xp, 0, -2.4], [xp + 0.02, BASE_TOP, 0], b.mats.neutral);
+  b.box("island_panels__end_panel", [xp - wtDepth, 0, -2.42], [xp + 0.34, top, -2.4], b.mats.neutral, { grainAxis: "y" });
+  b.box("fixed__worktop", [xp - wtDepth, BASE_TOP, -2.4], [xp + 0.34, top, 0], b.mats.quartz);
+  for (const z of [-1.0, -1.8]) stool(b, xp + 0.55, z);
+  for (const z of [-1.0, -1.8]) pendant(b, xp + 0.05, z);
+  b.cylinder("fixed__bowl", [xp - 0.2, top + 0.04, -1.4], 0.08, 0.3, b.mats.ceramicDark, 32);
+  return { min: [0, 0, -3.8] as V3, max: [4.4, 2.6, 0] as V3 };
+}
+
+/** Straight run along one wall with a free-standing island. */
+function buildStraightIsland(b: Builder) {
+  room(b, 5.0, 4.6);
+  const back: Frame = { origin: [0.2, 0], u: [1, 0], d: [0, -1], axis: "x" };
+  tallUnit(b, back, 0, 0.6, "fridge");
+  tallUnit(b, back, 0.6, 0.6, "oven");
+  b.runBox("tall_cabinets__end_panel", back, -DOOR, 0, 0, BASE_DEPTH + DOOR, 0, TALL_Y1, b.mats.neutral);
+  baseUnit(b, "lower_cabinets", back, 1.2, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", back, 1.8, 0.6, "doors");
+  baseUnit(b, "lower_cabinets", back, 2.4, 0.6, "drawers");
+  baseUnit(b, "lower_cabinets", back, 3.0, 0.6, "door");
+  b.runBox("lower_cabinets__end_panel", back, 3.6, 3.6 + DOOR, 0, BASE_DEPTH + DOOR, 0, BASE_TOP, b.mats.neutral);
+  worktop(b, back, 1.2, 3.6 + DOOR);
+  splashback(b, back, 1.2, 3.6 + DOOR);
+  hobAndHood(b, back, 1.8);
+  upperUnit(b, "upper_cabinets", back, 1.2, 0.6, 1);
+  upperUnit(b, "upper_cabinets", back, 2.4, 1.2, 2);
+  shelves(b, back, 3.68, 4.48, [1.5, 1.82, 2.14]);
+  shelfDecor(b, back, 3.7, [1.5, 1.82, 2.14]);
+
+  island(b, 1.2, ["drawers", "sink", "doors", "drawers"], -2.1, [1.75, 2.65]);
+  sink(b, { origin: [1.2, -2.1], u: [1, 0], d: [0, 1], axis: "x" }, 0.6);
+  return { min: [0, 0, -4] as V3, max: [4.6, 2.6, 0] as V3 };
+}
+
 /** Assigns physical (metre-based) UVs to fixed meshes that carry textures, e.g. the floor. */
 export function applyWorldUVs(mesh: Mesh, grainAxis: GrainAxis, offset: [number, number] = [0, 0]) {
   mesh.computeWorldMatrix(true);
@@ -466,10 +646,19 @@ export function applyWorldUVs(mesh: Mesh, grainAxis: GrainAxis, offset: [number,
   return true;
 }
 
-export function buildProceduralKitchen(scene: Scene, builder: "demo-l-island" | "demo-straight"): BuiltKitchen {
+const BUILDERS: Record<ProceduralBuilderId, (b: Builder) => { min: V3; max: V3 }> = {
+  "demo-l-island": buildLIsland,
+  "demo-straight": buildStraight,
+  "demo-u-shape": buildUShape,
+  "demo-galley": buildGalley,
+  "demo-peninsula": buildPeninsula,
+  "demo-straight-island": buildStraightIsland,
+};
+
+export function buildProceduralKitchen(scene: Scene, builder: ProceduralBuilderId): BuiltKitchen {
   const root = new TransformNode(`kitchen_root_${builder}`, scene);
   const b = new Builder(scene, createMaterials(scene), root);
-  const bounds = builder === "demo-l-island" ? buildLIsland(b) : buildStraight(b);
+  const bounds = BUILDERS[builder](b);
   for (const m of b.meshes) {
     if (m.metadata?.physicalUV) applyWorldUVs(m, "x");
   }
