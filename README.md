@@ -53,6 +53,7 @@ ADMIN_PASSWORD=some-long-test-password DATA_DIR=/tmp/tks-e2e npm start
 E2E_DATA_DIR=/tmp/tks-e2e ADMIN_PASSWORD=some-long-test-password npm run test:e2e:stage3
 CATALOGUE_FILE=data/demo-catalogue.json npm start   # demo data, then:
 npm run test:e2e     # browser checks against the DEMO catalogue (set BASE_URL to change)
+# quote emails with no writable disk (as on Netlify): see the comment at the top of scripts/e2e-quote-email.mjs
 ```
 
 Independent QA run of all 14 acceptance criteria (needs the real-data server with `ADMIN_PASSWORD` and `DATA_DIR`, plus the 600-record stress server on port 3001):
@@ -74,7 +75,8 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
 | Browser checks, designs/sharing/quotes/admin (save and reload a design, variants and the unsaved-changes prompt, summary and variant comparison, CSV, share link in a fresh browser with the same codes and camera, unknown code in a link reported and not substituted, quote validation, server error and network error never show success, stored enquiry has server-checked panel details, unknown codes and spam rejected, admin locked without sign-in, wrong password refused, password not in page scripts, status change saved, cross-site change refused, CSV export, import blocked on errors, clean import goes live and is removed, admin off without a password, phone layout) | 18/18 pass |
 | Browser checks, DEMO catalogue | 20/20 pass |
-| Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import | 32/32 pass |
+| Browser checks, quote email with no writable disk (as on Netlify): the request is emailed to info@targetqatar.com with the reference, all panel codes, a design link and escaped customer text, and success is shown; when the email service refuses and nothing is stored, the visitor sees an error | 2/2 pass |
+| Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import, quotation email (content and escaping, Resend, SMTP against a stand-in mail server, stored-or-emailed rule) | 38/38 pass |
 | T1 3D kitchen renders (142 meshes, 5 regions) | pass |
 | T2 rotate (drag and arrow keys), zoom (wheel and buttons), pan (right-drag), preset views, reset view | pass |
 | T3 search by code and by name, empty state, category filter | pass |
@@ -181,10 +183,17 @@ Everything uses free options. Nothing is sent to a paid service.
 | --- | --- | --- |
 | Saved designs and variants | The visitor's browser (localStorage) | Only on that browser and device; lost if site data is cleared. Use a share link to move a design. |
 | Share links | Inside the link itself (`/?design=…`) | No server storage. The link holds the layout, panel codes and camera, not prices or personal data. |
-| Quotation enquiries | `DATA_DIR/enquiries.json` on the server, or Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set | The file option needs a server with a disk that is kept (any Node.js host or VPS). On Vercel or Netlify the disk is not kept, so set up Supabase (free tier, run `supabase/schema.sql`). Without either, submissions fail with an error and the visitor is told it was not sent. Back up the file or database; contact details are personal data. |
+| Quotation enquiries | `DATA_DIR/enquiries.json` on the server, or Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set | The file option needs a server with a disk that is kept (any Node.js host or VPS). On Vercel or Netlify the disk is not kept, so set up Supabase (free tier, run `supabase/schema.sql`). Each request is also emailed (see below). A request counts as sent when it is stored or emailed; if neither works, the visitor is told it was not sent. Back up the file or database; contact details are personal data. |
 | Products imported from admin | `DATA_DIR/catalogue/*.json` on the server | Same disk rule as above. Brand PDF imports are part of the code (`data/brands/`) and are deployed with it. |
 
-No email is sent when an enquiry arrives; staff check `/admin`. Email can be added later with an email provider's API key kept on the server.
+### Quotation emails
+
+Each quotation request is emailed to `info@targetqatar.com` (change with `QUOTE_EMAIL_TO`). It lists the contact details, every panel code chosen, the customer's notes and a link that reopens the design. Replying to the email replies to the customer. Pick one free option and set it in the server environment (on Netlify: Site configuration → Environment variables), then redeploy:
+
+- **Resend (free tier, 100 emails a day):** create an account at resend.com using `info@targetqatar.com`, create an API key, and set `RESEND_API_KEY`. Until a domain is verified in Resend, it only delivers to the address the account was created with, sent from `onboarding@resend.dev`.
+- **Company mailbox (SMTP):** set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (and `SMTP_SECURE=true` for port 465) from your email provider. If both are set, SMTP is used.
+
+Keys and passwords stay on the server; none are in the browser code. Problems are written to the server log (Netlify: Logs → Functions).
 
 ## Admin
 
@@ -196,13 +205,13 @@ Set `ADMIN_PASSWORD` (at least 12 characters) in the server environment and open
 
 ## Deployment (free options only)
 
-The app is a standard Next.js server app (pages plus API routes). It needs no database unless you deploy to a serverless host and want enquiries stored (then use the Supabase free tier).
+The app is a standard Next.js server app (pages plus API routes). It needs no database. On a serverless host, quotation requests reach you by email; add the Supabase free tier if you also want them listed in `/admin`.
 
 - **Netlify (free plan):** connect the GitHub repo; Netlify detects Next.js automatically. Build command `npm run build`.
 - **Vercel (Hobby, free):** import the repo; no settings needed. Vercel's Hobby plan is limited to non-commercial use, so it fits a private demo but a public company site would need a different plan or host.
 - **Any Node.js host or a small VPS:** `npm ci && npm run build && npm start` (port 3000, or set `PORT`). Enquiries and admin imports are saved in `DATA_DIR` on its disk; back that folder up.
 
-On Netlify and Vercel, enquiries need Supabase (see "Where data is stored"), and admin product import does not work because their disks are not kept; import with the command-line tools and redeploy instead.
+On Netlify and Vercel, set up quotation emails (or Supabase) or the quote form cannot send (see "Where data is stored"), and admin product import does not work because their disks are not kept; import with the command-line tools and redeploy instead.
 
 `data/*.json` is bundled with the API route for serverless hosts (see `outputFileTracingIncludes` in `next.config.ts`).
 

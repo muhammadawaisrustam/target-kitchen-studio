@@ -70,7 +70,7 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
     return (
       <Dialog title="Enquiry received" onClose={onClose} testId="quote-dialog">
         <div className="space-y-3" role="status" data-testid="quote-success">
-          <p>Your quotation request has been saved.</p>
+          <p>Your quotation request has been sent.</p>
           <p className="rounded-xl bg-accent-soft px-4 py-3">
             Reference <span className="font-mono font-semibold" data-testid="quote-reference">{state.reference}</span>
           </p>

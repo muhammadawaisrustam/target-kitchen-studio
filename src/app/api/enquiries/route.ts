@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { EnquiryInputSchema, fieldErrors } from "@/lib/enquiries/schema";
 import { loadCatalogue } from "@/lib/server/catalogueRepository";
-import { getEnquiryStore, StorageUnavailableError } from "@/lib/server/enquiryStore";
+import { getEnquiryStore } from "@/lib/server/enquiryStore";
+import { getMailer } from "@/lib/server/mailer";
+import { submitEnquiry } from "@/lib/server/submitEnquiry";
 import { buildEnquiry, EnquiryRejectedError } from "@/lib/server/enquiries";
 import { clientIp, rateLimit } from "@/lib/server/rateLimit";
 
@@ -10,7 +12,7 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/enquiries: stores a quotation request.
- * Responds 201 with the reference only after the store has confirmed the record was saved.
+ * Responds 201 with the reference only after the enquiry was confirmed saved, emailed, or both.
  */
 export async function POST(request: Request) {
   const limited = rateLimit(`enquiry:${clientIp(request)}`, 5, 10 * 60_000);
@@ -33,14 +35,14 @@ export async function POST(request: Request) {
   try {
     const { products } = await loadCatalogue();
     const enquiry = buildEnquiry(parsed.data, products);
-    const saved = await getEnquiryStore().create(enquiry);
-    return NextResponse.json({ reference: saved.reference, createdAt: saved.createdAt }, { status: 201 });
+    const origin = new URL(request.url).origin;
+    const result = await submitEnquiry(enquiry, getEnquiryStore(), getMailer(), origin);
+    if (result.problems.length) console.error(`[enquiries] ${enquiry.reference}:`, result.problems.join(" | "));
+    if (!result.stored && !result.emailed)
+      return NextResponse.json({ error: "Your enquiry could not be sent right now. Please try again later or contact us directly." }, { status: 503 });
+    return NextResponse.json({ reference: enquiry.reference, createdAt: enquiry.createdAt }, { status: 201 });
   } catch (err) {
     if (err instanceof EnquiryRejectedError) return NextResponse.json({ error: err.message, fields: { design: err.message } }, { status: 422 });
-    if (err instanceof StorageUnavailableError) {
-      console.error("[enquiries] storage failed", err.message, err.cause);
-      return NextResponse.json({ error: "Your enquiry could not be saved right now, so it was not sent. Please try again later or contact us directly." }, { status: 503 });
-    }
     console.error("[enquiries] unexpected error", err);
     return NextResponse.json({ error: "Something went wrong, so your enquiry was not sent. Please try again." }, { status: 500 });
   }
