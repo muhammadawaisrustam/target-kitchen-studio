@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { Product } from "@/lib/catalogue/schema";
 import { fetchCatalogue, type CatalogueResponse } from "@/lib/catalogue/client";
 import type { RegionState } from "./RegionBar";
@@ -20,6 +20,8 @@ type Filters = { brand: string; board: string; category: string; colourFamily: s
 const NO_FILTERS: Filters = { brand: "", board: "", category: "", colourFamily: "", finish: "" };
 
 export default function MaterialPanel({ activeRegionLabel, selectedCode, selectedProduct, selectedState, onSelect }: Props) {
+  // Unique per instance: the panel list is shown in both the 3D studio and My Kitchen Photo.
+  const searchId = `panel-search-${useId().replace(/:/g, "")}`;
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -102,11 +104,11 @@ export default function MaterialPanel({ activeRegionLabel, selectedCode, selecte
         {selectedProduct && <SelectedDetails product={selectedProduct} state={selectedState} />}
 
         <div className="relative">
-          <label htmlFor="panel-search" className="sr-only">
+          <label htmlFor={searchId} className="sr-only">
             Search by panel code or name
           </label>
           <input
-            id="panel-search"
+            id={searchId}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
