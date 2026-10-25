@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { SummaryRow } from "@/lib/designs/summary";
 import type { Selections } from "@/lib/designs/model";
 import Dialog from "./Dialog";
+import { buildWhatsAppText, whatsAppLink } from "@/lib/designs/whatsapp";
 
 interface Props {
   rows: SummaryRow[];
@@ -26,6 +27,9 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [state, setState] = useState<State>({ kind: "editing" });
   const chosen = rows.filter((r) => r.panelCode);
+  const waLink = (reference?: string) =>
+    whatsAppLink(buildWhatsAppText({ rows, layoutName, designName, variantName, shareUrl, name: form.name, location: form.location, notes: form.message, reference }));
+  const waButton = "inline-flex items-center gap-2 rounded-full bg-[#1f7a4d] px-5 py-2 text-sm font-medium text-white";
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const localCheck = (): Record<string, string> => {
@@ -70,14 +74,19 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
     return (
       <Dialog title="Enquiry received" onClose={onClose} testId="quote-dialog">
         <div className="space-y-3" role="status" data-testid="quote-success">
-          <p>Your quotation request has been saved.</p>
+          <p>Your quotation request has been sent.</p>
           <p className="rounded-xl bg-accent-soft px-4 py-3">
             Reference <span className="font-mono font-semibold" data-testid="quote-reference">{state.reference}</span>
           </p>
           <p className="text-sm text-muted">Please keep this reference if you contact us about this kitchen. A copy of your panel choices was stored with it.</p>
-          <button type="button" onClick={onClose} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">
-            Back to the kitchen
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onClose} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">
+              Back to the kitchen
+            </button>
+            <a href={waLink(state.reference)} target="_blank" rel="noopener noreferrer" className={waButton} data-testid="q-whatsapp-after">
+              Also send on WhatsApp
+            </a>
+          </div>
         </div>
       </Dialog>
     );
@@ -187,10 +196,24 @@ export default function QuoteDialog({ rows, modelId, layoutName, selections, des
         )}
 
         <div className="flex items-center gap-3">
-          <button type="submit" disabled={state.kind === "sending"} className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-white disabled:opacity-60" data-testid="q-submit">
+          <button type="submit" disabled={state.kind === "sending"} className="shrink-0 whitespace-nowrap rounded-full bg-accent px-5 py-2 text-sm font-medium text-white disabled:opacity-60" data-testid="q-submit">
             {state.kind === "sending" ? "Sending…" : "Send enquiry"}
           </button>
           <p className="text-xs text-muted">No price is shown online; the sales team prepares the quotation.</p>
+        </div>
+
+        <div className="border-t border-line pt-4">
+          <p className="text-sm font-medium">Or send it on WhatsApp</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Opens WhatsApp with your kitchen, panel codes and design link ready to send to Target (+974 7765 7373). Nothing is sent until you press send there.
+          </p>
+          {chosen.length ? (
+            <a href={waLink()} target="_blank" rel="noopener noreferrer" className={`${waButton} mt-2`} data-testid="q-whatsapp">
+              Send on WhatsApp
+            </a>
+          ) : (
+            <p className="mt-2 text-xs text-warn">Choose at least one panel first.</p>
+          )}
         </div>
       </form>
     </Dialog>

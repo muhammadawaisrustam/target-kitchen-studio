@@ -1,0 +1,112 @@
+[
+  {
+    "name": "Layout menu lists every registered layout",
+    "ok": true,
+    "detail": "6 layouts"
+  },
+  {
+    "name": "L-shaped kitchen with island: loads with its starting panels in every region",
+    "ok": true,
+    "detail": "5 regions: upper_cabinets 7, lower_cabinets 21, tall_cabinets 8, island_panels 14, open_shelves 3"
+  },
+  {
+    "name": "L-shaped kitchen with island: changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 4 other regions unchanged"
+  },
+  {
+    "name": "L-shaped kitchen with island: front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Straight kitchen: loads with its starting panels in every region",
+    "ok": true,
+    "detail": "4 regions: upper_cabinets 3, lower_cabinets 17, tall_cabinets 8, open_shelves 2"
+  },
+  {
+    "name": "Straight kitchen: changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 3 other regions unchanged"
+  },
+  {
+    "name": "Straight kitchen: front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "U-shaped kitchen: loads with its starting panels in every region",
+    "ok": true,
+    "detail": "4 regions: upper_cabinets 8, lower_cabinets 30, tall_cabinets 8, open_shelves 3"
+  },
+  {
+    "name": "U-shaped kitchen: changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 3 other regions unchanged"
+  },
+  {
+    "name": "U-shaped kitchen: front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Galley kitchen (two parallel runs): loads with its starting panels in every region",
+    "ok": true,
+    "detail": "4 regions: upper_cabinets 6, lower_cabinets 35, tall_cabinets 7, open_shelves 3"
+  },
+  {
+    "name": "Galley kitchen (two parallel runs): changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 3 other regions unchanged"
+  },
+  {
+    "name": "Galley kitchen (two parallel runs): front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "L-shaped kitchen with peninsula: loads with its starting panels in every region",
+    "ok": true,
+    "detail": "5 regions: upper_cabinets 7, lower_cabinets 22, tall_cabinets 8, island_panels 14, open_shelves 2"
+  },
+  {
+    "name": "L-shaped kitchen with peninsula: changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 4 other regions unchanged"
+  },
+  {
+    "name": "L-shaped kitchen with peninsula: front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Straight kitchen with island: loads with its starting panels in every region",
+    "ok": true,
+    "detail": "5 regions: upper_cabinets 5, lower_cabinets 14, tall_cabinets 8, island_panels 17, open_shelves 3"
+  },
+  {
+    "name": "Straight kitchen with island: changing one region leaves the others unchanged",
+    "ok": true,
+    "detail": "lower_cabinets -> DEMO-UC-107; 4 other regions unchanged"
+  },
+  {
+    "name": "Straight kitchen with island: front and top views, then reset",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Saved design and share link keep the chosen layout",
+    "ok": true,
+    "detail": "Straight kitchen with island reopened from the link"
+  },
+  {
+    "name": "No page errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Phone: every layout loads without horizontal scrolling",
+    "ok": true,
+    "detail": ""
+  }
+]

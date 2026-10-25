@@ -27,15 +27,17 @@ export interface CameraState {
   target: [number, number, number];
 }
 
+export type ProceduralBuilderId = "demo-l-island" | "demo-straight" | "demo-u-shape" | "demo-galley" | "demo-peninsula" | "demo-straight-island";
+
 export type ModelSource =
-  | { type: "procedural"; builder: "demo-l-island" | "demo-straight" }
+  | { type: "procedural"; builder: ProceduralBuilderId }
   | { type: "gltf"; url: string };
 
 export interface KitchenModelDefinition {
   id: string;
   name: string;
   description: string;
-  layout: "straight" | "l-shape" | "u-shape" | "island" | "l-shape-island";
+  layout: "straight" | "l-shape" | "u-shape" | "island" | "l-shape-island" | "galley" | "peninsula" | "straight-island";
   source: ModelSource;
   previewImage: string;
   /** Prototype models are illustrative only and are labelled as such in the UI. */
