@@ -75,8 +75,8 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 | Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
 | Browser checks, designs/sharing/quotes/admin (save and reload a design, variants and the unsaved-changes prompt, summary and variant comparison, CSV, share link in a fresh browser with the same codes and camera, unknown code in a link reported and not substituted, quote validation, server error and network error never show success, stored enquiry has server-checked panel details, unknown codes and spam rejected, admin locked without sign-in, wrong password refused, password not in page scripts, status change saved, cross-site change refused, CSV export, import blocked on errors, clean import goes live and is removed, admin off without a password, phone layout) | 18/18 pass |
 | Browser checks, DEMO catalogue | 20/20 pass |
-| Browser checks, quote email with no writable disk (as on Netlify): the request is emailed to info@targetqatar.com with the reference, all panel codes, a design link and escaped customer text, and success is shown; when the email service refuses and nothing is stored, the visitor sees an error | 2/2 pass |
-| Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import, quotation email (content and escaping, Resend, SMTP against a stand-in mail server, stored-or-emailed rule) | 38/38 pass |
+| Browser checks, quote email with no writable disk (as on Netlify): the request is emailed to info@targetqatar.com with the reference, all panel codes, a design link and escaped customer text, and success is shown; when the email service refuses and nothing is stored, the visitor sees an error and the WhatsApp button opens a chat with +974 7765 7373 holding the kitchen, codes and design link | 3/3 pass |
+| Unit tests: catalogue, materials, mapping, UVs, brand files, designs and variants, share links, summary CSV safety, enquiry validation, file store (20 concurrent writes, unwritable disk fails loudly), Supabase store (against a stand-in server), rate limit, admin sessions and same-site checks, admin import, quotation email (content and escaping, Resend, SMTP against a stand-in mail server, stored-or-emailed rule), WhatsApp message and link | 40/40 pass |
 | T1 3D kitchen renders (142 meshes, 5 regions) | pass |
 | T2 rotate (drag and arrow keys), zoom (wheel and buttons), pan (right-drag), preset views, reset view | pass |
 | T3 search by code and by name, empty state, category filter | pass |
@@ -193,7 +193,11 @@ Each quotation request is emailed to `info@targetqatar.com` (change with `QUOTE_
 - **Resend (free tier, 100 emails a day):** create an account at resend.com using `info@targetqatar.com`, create an API key, and set `RESEND_API_KEY`. Until a domain is verified in Resend, it only delivers to the address the account was created with, sent from `onboarding@resend.dev`.
 - **Company mailbox (SMTP):** set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (and `SMTP_SECURE=true` for port 465) from your email provider. If both are set, SMTP is used.
 
-Keys and passwords stay on the server; none are in the browser code. Problems are written to the server log (Netlify: Logs → Functions).
+### WhatsApp
+
+The quote form also has **Send on WhatsApp**. It opens WhatsApp (app or web) with a message to Target's number (+974 7765 7373) listing the kitchen, every panel code, the design link and the customer's name and notes. The customer presses send in WhatsApp, so the studio cannot confirm it was sent. This uses a free wa.me link, needs no WhatsApp Business API account, and works without any email settings. To use another number, set `NEXT_PUBLIC_WHATSAPP_NUMBER` (digits with country code) before building.
+
+Email keys and passwords stay on the server; none are in the browser code. Problems are written to the server log (Netlify: Logs → Functions).
 
 ## Admin
 

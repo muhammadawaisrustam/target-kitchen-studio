@@ -51,10 +51,35 @@ await check("Quote is emailed to info@targetqatar.com and shown as sent, with no
   assert(body.text.includes("/?design="), "no design link");
   assert(!body.html.includes("<b>thanks</b>") && body.html.includes("&lt;b&gt;"), "customer text not escaped");
   assert((await page.textContent("[data-testid=quote-success]")).includes("sent"), "success wording");
+  const after = new URL(await page.getAttribute("[data-testid=q-whatsapp-after]", "href"));
+  assert(after.searchParams.get("text").includes(`Reference: ${ref}`), "WhatsApp after sending lacks the reference");
   await page.screenshot({ path: `${OUT}/quote-emailed.png` });
   await page.click("[data-testid=dialog-close]");
   fs.writeFileSync(`${OUT}/quote-email-sample.txt`, `To: ${body.to}\nReply-To: ${body.reply_to}\nSubject: ${body.subject}\n\n${body.text}\n`);
   return `${ref}; ${body.text.split("\n").filter((l) => l.startsWith("- ")).length} panel lines`;
+});
+
+await check("WhatsApp button opens a chat with +974 7765 7373 holding the kitchen, codes and design link", async () => {
+  await page.click("[data-testid=open-quote]");
+  await page.fill("[data-testid=q-name]", "WhatsApp Customer");
+  await page.fill("[data-testid=q-message]", "Size 4 m & island?");
+  const href = await page.getAttribute("[data-testid=q-whatsapp]", "href");
+  const u = new URL(href);
+  assert(u.origin + u.pathname === "https://wa.me/97477657373", href.slice(0, 60));
+  const text = u.searchParams.get("text");
+  const listed = await page.locator("[data-testid=quote-panels] li .font-mono").allTextContents();
+  assert(listed.length && listed.every((c) => text.includes(c)), "codes missing from message");
+  assert(text.includes("Name: WhatsApp Customer") && text.includes("Notes: Size 4 m & island?") && /Design: http\S+\/\?design=/.test(text), text);
+  await page.context().route("https://wa.me/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<title>wa</title>" }));
+  const [popup] = await Promise.all([page.waitForEvent("popup"), page.click("[data-testid=q-whatsapp]")]);
+  await popup.waitForLoadState();
+  assert(popup.url().startsWith("https://wa.me/97477657373?text="), popup.url().slice(0, 60));
+  await popup.close();
+  assert(await page.locator("[data-testid=quote-form]").count(), "quote form was closed");
+  await page.screenshot({ path: `${OUT}/quote-whatsapp.png` });
+  await page.click("[data-testid=dialog-close]");
+  fs.writeFileSync(`${OUT}/whatsapp-sample.txt`, text + "\n");
+  return `${listed.length} codes, ${href.length}-char link, opens in a new tab`;
 });
 
 await check("If the email service refuses and nothing is stored, the visitor sees an error, not success", async () => {
