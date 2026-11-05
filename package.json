@@ -15,6 +15,7 @@
     "catalogue:import": "tsx scripts/catalogue-cli.ts import",
     "catalogue:stress": "tsx scripts/catalogue-cli.ts stress",
     "catalogue:import-pdf": "node scripts/import-brand-pdf.mjs",
+    "catalogue:import-collection": "node scripts/import-collection-pdf.mjs",
     "test:e2e:brands": "node scripts/e2e-brands.mjs",
     "test:e2e:stage3": "node scripts/e2e-stage3.mjs",
     "test:e2e:email": "node scripts/e2e-quote-email.mjs",

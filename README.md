@@ -2,9 +2,11 @@
 
 A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet region, pick a panel, and the 3D kitchen updates live.
 
-> **Data.** By default the app serves the real **Kastamonu** panels imported from `Target-Kastamonu_Melamine_Panels_Profile_2026.pdf` (145 Item IDs). Only what the PDF prints is used: Item ID, decor name, board, collection, finish (from the name prefix), sheet size, origin and swatch image. Colour groups and sheen are estimates and are labelled as estimates in the UI. No prices, stock or texture scale are invented. The separate `DEMO-…` catalogue is synthetic and is kept for testing. The kitchens are illustrative prototypes, not manufacturing drawings. No official Target branding is used.
+> **Data.** By default the app serves the real panels imported from `Target_Panels_Collection_2026_DRAFT.pdf`: **433 Item IDs from five brands** (Kastamonu 163, Greenlam 127, Glory 88, Target 49, Polylac 6), covering melamine faced particleboard and MDF, PVC/PET panels, HPL, compact laminate, curved panels and Digital Polylac. 422 are published; 11 are kept hidden until the missing information is supplied (see `docs/imports/collection-report.md`). Only what the PDF prints is used: Item ID, decor name, board, collection, finish (from the name prefix or the HPL surface heading), sheet size, origin and swatch image. Colour groups and sheen are estimates and are labelled as estimates in the UI. No prices, stock or texture scale are invented. The separate `DEMO-…` catalogue is synthetic and is kept for testing. The kitchens are illustrative prototypes, not manufacturing drawings. No official Target branding is used.
 
 ![Real Kastamonu panels on three regions](docs/screenshots/brands-02-mixed.jpg)
+
+![Glory, Target, Greenlam HPL and Polylac panels on four regions](docs/screenshots/brands-03-all-brands.jpg)
 
 ## What works today
 
@@ -21,7 +23,7 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
   - a hatched "TEXTURE UNAVAILABLE" placeholder and a warning when a texture fails. Another panel is never silently substituted.
 - Camera: drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan, arrow keys when the canvas is focused, zoom buttons, reset, and Front / Side / Top / 3D views.
 - Searchable catalogue (Item ID with or without dashes, decor name, collection, colour, finish, brand, board), brand/board/collection/colour/finish filters, and server-side paging from `/api/catalogue`. Tested with 600 records.
-- PDF importer for brand catalogues laid out like the Kastamonu profile (see "Importing a brand PDF").
+- PDF importers for the multi-brand Panels Collection and for single-brand profiles laid out like the Kastamonu one (see "Importing a brand PDF").
 - Responsive layout for desktop, tablet and phone. On phones the page scrolls and the 3D view and region cards stay pinned at the top, so the panel list has the rest of the screen.
 - Render-on-demand: the GPU stops drawing about 1.5 s after the last interaction.
 - **Saved designs with variants** (Designs button): name a design, add variants (each a full set of panel choices, layout and camera view), switch between them, rename, delete. If a variant has unsaved changes, switching asks first. Designs are kept in the browser (see "Where data is stored").
@@ -72,7 +74,7 @@ Latest results (24 Oct 2026, headless Chromium with software WebGL):
 
 | Check | Result |
 | --- | --- |
-| Browser checks, real Kastamonu data (145 panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and MDF gloss on two regions, details show PDF facts and labelled estimates, phone layout) | 8/8 pass |
+| Browser checks, real brand data (422 published panels load, real starting codes, only 2 textures downloaded at start, search 1-669 / walnut / MDF filter, woodgrain and PVC gloss on two regions, details show PDF facts and labelled estimates, Glory, Target, Greenlam HPL and Polylac panels each on their own region, phone layout; 5 Nov 2026) | 9/9 pass |
 | Browser checks, designs/sharing/quotes/admin (save and reload a design, variants and the unsaved-changes prompt, summary and variant comparison, CSV, share link in a fresh browser with the same codes and camera, unknown code in a link reported and not substituted, quote validation, server error and network error never show success, stored enquiry has server-checked panel details, unknown codes and spam rejected, admin locked without sign-in, wrong password refused, password not in page scripts, status change saved, cross-site change refused, CSV export, import blocked on errors, clean import goes live and is removed, admin off without a password, phone layout) | 18/18 pass |
 | Browser checks, all 6 layouts (each loads with its starting panels in every region, changing one region leaves the others alone, front/top/reset views, share link keeps the layout, phone layout), on real and on DEMO data | 22/22 pass on each |
 | Browser checks, DEMO catalogue | 20/20 pass |
@@ -126,6 +128,22 @@ tests/unit/                unit tests
 
 ## Importing a brand PDF
 
+The full multi-brand collection (the current data):
+
+```bash
+npm run catalogue:import-collection -- "Target_Panels_Collection_2026_DRAFT.pdf"
+```
+
+This writes one `data/brands/<brand>.json` per brand (brand from the quick order list's MADE IN / BRAND column), swatches under `public/brands/<brand>/`, and `docs/imports/collection-report.md` plus `collection-products.csv`. Product ids are `<brand>-<item id in lower case>`, so re-running it keeps ids (and saved designs, share links and admin edits) attached. On top of the rules below it:
+
+- attaches every Item ID printed on a decor page to the swatch directly above it, so cards with several Item IDs (sheet sizes, HPL thicknesses, curved radii) share their own swatch;
+- names swatch files by decor code, or by Item ID where one brand prints different pictures for the same decor code (e.g. an HPL decor in suede and in high gloss);
+- reads HPL finishes from the surface heading above each card (Suede, High gloss, Veracious bark…) and checks the heading against the finish code in the Item ID;
+- gives curved panels the texture of the flat panel with the same brand and decor code (the PDF shows curved panels only as 3D renders), and imports the ones without a flat panel as not published;
+- keeps an Item ID that looks misprinted exactly as printed, but not published, and reports it.
+
+A single-brand profile laid out like the Kastamonu one:
+
 ```bash
 npm run catalogue:import-pdf -- "Target-Kastamonu_Melamine_Panels_Profile_2026.pdf" --brand Kastamonu
 ```
@@ -140,7 +158,7 @@ This writes `data/brands/<brand>.json`, `public/brands/<brand>/textures|thumbs/`
 
 It expects the same layout as the Kastamonu profile (Item IDs like `1-026-T18-C-J-1`, a swatch above each decor name, a quick order list table). A PDF in another layout will report errors rather than guess.
 
-Swatches in the Kastamonu PDF are 520 × 520 px and most do not tile, so repeats can show seams up close. High-resolution seamless scans from the supplier can be dropped into `public/brands/kastamonu/textures/` with the same file names.
+Swatches in the PDFs are 520 × 520 px (Polylac 454 × 632 px) and most do not tile, so repeats can show seams up close. High-resolution seamless scans from the supplier can be dropped into `public/brands/<brand>/textures/` with the same file names.
 
 ## Adding real panel data from a spreadsheet
 
@@ -223,7 +241,7 @@ On Netlify and Vercel, set up quotation emails (or Supabase) or the quote form c
 
 ## Known limitations and next steps
 
-- Kastamonu textures come from 520 px catalogue swatches, and the real texture scale (size of one repeat) is not in the PDF; the preview assumes 1 m. Supplier scans and repeat sizes would fix both.
+- Textures come from 520 px catalogue swatches, and the real texture scale (size of one repeat) is not in the PDF; the preview assumes 1 m. Supplier scans and repeat sizes would fix both. Digital Polylac pictures show a whole printed sheet, so they repeat on large doors.
 - Metals are approximated as grey non-metallic surfaces because no reflection environment is loaded; gloss shows as highlights rather than reflections.
 - Saved designs are per browser. Saving designs to an account (so they follow a customer between devices) would need sign-in, for example Supabase Auth on the free tier.
 - No email or WhatsApp notification for new enquiries yet.

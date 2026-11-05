@@ -153,7 +153,7 @@ await check("Summary lists every region's Item ID, compares variants, downloads 
   await page.waitForSelector("[data-testid=summary-table]");
   const rows = await page.locator("[data-testid=summary-table] tbody tr").allTextContents();
   assert(rows.length === 5, `${rows.length} rows`);
-  assert(rows.some((r) => r.includes("3-191-T18-M-M-1") && r.includes("HG RED PVC") && r.includes("MDF")), rows.join(" | "));
+  assert(rows.some((r) => r.includes("3-191-T18-M-M-1") && r.includes("HG RED PVC") && r.includes("PVC/PET")), rows.join(" | "));
   assert(rows.some((r) => r.includes("1-668-T18-C-L-27")), "lower missing");
   const cmp = await page.locator("[data-testid=compare-table] thead th").count();
   assert(cmp === 3, `compare columns ${cmp}`);
@@ -251,7 +251,7 @@ await check("Quote form: success only after the server stores it, with the panel
   assert(stored, "reference not in the server file");
   assert(stored.design.designName === "Villa 12 kitchen" && stored.design.variantName === "Variant B", JSON.stringify(stored.design).slice(0, 200));
   const upper = stored.design.items.find((i) => i.region === "upper_cabinets");
-  assert(upper.panelCode === "3-191-T18-M-M-1" && upper.productName === "HG RED PVC" && upper.board === "MDF", JSON.stringify(upper));
+  assert(upper.panelCode === "3-191-T18-M-M-1" && upper.productName === "HG RED PVC" && upper.board === "PVC/PET", JSON.stringify(upper));
   assert(stored.design.items.length === 5 && stored.contact.phone === "+974 5555 1234" && stored.status === "new", "fields");
   await page.screenshot({ path: `${OUT}/s3-04-quote-sent.png` });
   await page.click("[data-testid=dialog-close]");

@@ -41,11 +41,11 @@ const waitRegion = (r, code) =>
     { timeout: 60_000 },
   );
 
-await check("Real catalogue loads: 145 Kastamonu Item IDs, no DEMO disclaimer", async () => {
-  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "145 panels");
+await check("Real catalogue loads: 422 published Item IDs from five brands, no DEMO disclaimer", async () => {
+  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "422 panels");
   assert(!(await page.locator("[data-testid=demo-disclaimer]").count()), "demo disclaimer shown on real data");
   assert(await page.locator("[data-testid=colour-disclaimer]").isVisible(), "colour disclaimer missing");
-  return "145 panels";
+  return "422 panels";
 });
 
 await check("Starting design uses real codes", async () => {
@@ -61,7 +61,7 @@ await check("Starting design uses real codes", async () => {
   return `lower GARDEN OAK texture, upper CORPUS WHITE ${upper.albedoHex}`;
 });
 
-await check("Only selected textures are downloaded (not all 101)", async () => {
+await check("Only selected textures are downloaded (not all 300)", async () => {
   assert(textureRequests.size <= 5, `${textureRequests.size} textures requested`);
   return `${textureRequests.size} texture files requested at start`;
 });
@@ -71,15 +71,15 @@ await check("Search by Item ID fragment, by name, and by board filter", async ()
   await page.waitForSelector("[data-testid='product-1-669-T18-C-L-27']");
   await page.waitForFunction(() => document.querySelectorAll("[data-testid=product-grid] li").length === 1);
   await page.fill("[data-testid=panel-search]", "walnut");
-  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "7 panels");
+  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "34 panels");
   await page.fill("[data-testid=panel-search]", "");
   await page.selectOption("[data-testid=filter-board]", "MDF");
-  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "32 panels");
+  await page.waitForFunction(() => document.querySelector("[data-testid=result-count]")?.textContent === "113 panels");
   await page.selectOption("[data-testid=filter-board]", "");
-  return "1-669 -> CLAY; 'walnut' -> 7; MDF -> 32";
+  return "1-669 -> CLAY; 'walnut' -> 34; MDF -> 113";
 });
 
-await check("Apply a real woodgrain and a real MDF gloss to two regions", async () => {
+await check("Apply a real woodgrain and a real PVC gloss to two regions", async () => {
   await page.click("[data-testid=region-tall_cabinets]");
   await page.fill("[data-testid=panel-search]", "canaletto");
   await page.click("[data-testid='product-1-668-T18-C-L-27']");
@@ -102,10 +102,40 @@ await check("Apply a real woodgrain and a real MDF gloss to two regions", async 
 
 await check("Details show only PDF facts plus labelled estimates", async () => {
   const text = await page.textContent("[data-testid=selected-details]");
-  for (const s of ["3-191-T18-M-M-1", "Kastamonu", "MDF", "High gloss", "1220 × 2800 mm", "Turkey", "p. 16", "(estimated)"])
+  for (const s of ["3-191-T18-M-M-1", "Kastamonu", "PVC/PET", "High gloss", "1220 × 2800 mm", "Turkey", "p. 28", "(estimated)"])
     assert(text.includes(s), `missing "${s}" in: ${text}`);
   assert(!/DEMO/.test(text), "DEMO label on real product");
   return "code, brand, board, finish, sheet, origin, source page, colour marked estimated";
+});
+
+await check("Panels from the other brands apply to their own regions (Glory, Target, Greenlam, Polylac)", async () => {
+  const counts = {};
+  for (const b of ["Glory", "Target", "Greenlam", "Polylac"]) {
+    await page.selectOption("[data-testid=filter-brand]", b);
+    await page.waitForFunction((b) => document.querySelector("[data-testid=filter-brand]")?.value === b && !document.querySelector("[data-testid=product-list][aria-busy=true]"), b);
+    counts[b] = await page.textContent("[data-testid=result-count]");
+  }
+  await page.selectOption("[data-testid=filter-brand]", "");
+  const picks = [
+    ["lower_cabinets", "yellow bologna", "3-620-T18-M-M-24", "/brands/glory/textures/3-620.jpg"],
+    ["upper_cabinets", "vanilla oak", "1-516-T18-M2-S-6", "/brands/target/textures/1-516.jpg"],
+    ["tall_cabinets", "artisan oak", "1-443-T0.8-HVRB-L-9", "/brands/greenlam/textures/1-443.jpg"],
+    ["island_panels", "polylac 3", "4-692-T18-M-M-28", "/brands/polylac/textures/4-692.jpg"],
+  ];
+  for (const [r, q, code] of picks) {
+    await page.click(`[data-testid=region-${r}]`);
+    await page.fill("[data-testid=panel-search]", q);
+    await page.click(`[data-testid='product-${code}']`);
+    await waitRegion(r, code);
+  }
+  for (const [r, , , tex] of picks) {
+    const info = await region(r);
+    assert(info.textureName?.endsWith(tex), `${r}: ${info.textureName}`);
+  }
+  await page.fill("[data-testid=panel-search]", "");
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: `${OUT}/brands-03-all-brands.png` });
+  return `brand counts ${JSON.stringify(counts)}; Glory, Target, Greenlam HPL and Polylac each on their own region`;
 });
 
 await check("No page errors", async () => {
