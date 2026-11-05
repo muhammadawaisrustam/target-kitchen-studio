@@ -5,6 +5,7 @@
   "description": "Prototype 3D kitchen visualisation platform for Target Furniture Factory.",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/bundle-catalogue.mjs",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -21,7 +22,11 @@
     "test:e2e:email": "node scripts/e2e-quote-email.mjs",
     "test:qa": "node scripts/qa-acceptance.mjs",
     "test:e2e:layouts": "node --import tsx scripts/e2e-layouts.mjs",
-    "test:e2e:admin": "node scripts/e2e-admin-catalogue.mjs"
+    "test:e2e:admin": "node scripts/e2e-admin-catalogue.mjs",
+    "catalogue:bundle": "node scripts/bundle-catalogue.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && wrangler dev",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "engines": {
     "node": ">=20.9"
@@ -37,6 +42,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.13",
     "@tailwindcss/postcss": "4.1.18",
     "@types/node": "22.20.5",
     "@types/nodemailer": "8.0.2",
@@ -47,7 +53,8 @@
     "sharp": "0.35.5",
     "tailwindcss": "4.1.18",
     "tsx": "4.23.15",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "4.151.3"
   },
   "overrides": {
     "postcss": "8.5.31"

@@ -253,6 +253,23 @@ Browser checks for these screens: start a server with `ADMIN_PASSWORD` and `DATA
 
 ## Deployment (free options only)
 
+### Cloudflare Workers (free plan, recommended)
+
+The site runs on Cloudflare Workers through [OpenNext](https://opennext.js.org/cloudflare). Brand files are bundled into the build (`scripts/bundle-catalogue.mjs` runs before every build), so no file system is needed. Catalogue edits, enquiries and uploaded images go to Supabase.
+
+1. Create a free account at dash.cloudflare.com.
+2. Workers & Pages → Create → Import a repository → connect GitHub and pick this repository. The Worker name must be `target-kitchen-studio` (as in `wrangler.jsonc`).
+3. Build command: `npx opennextjs-cloudflare build`. Deploy command: `npx opennextjs-cloudflare deploy`.
+4. Settings → Variables and Secrets (type Secret): `ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `RESEND_API_KEY` for quote emails. Company SMTP does not work on Workers; use Resend.
+5. Every push to `main` deploys automatically. The site is served at `target-kitchen-studio.<your-subdomain>.workers.dev`; add your own domain under Settings → Domains & Routes.
+
+Locally: `npm run cf:preview` builds and runs the Worker at http://localhost:8787 (put variables in `.dev.vars`).
+
+Free-plan limits: 100,000 requests a day and 10 ms of CPU time per request. Pages and images are static files and cost no CPU; the catalogue API takes a few milliseconds per request, more on the first request to a fresh server instance. If Cloudflare ever reports "exceeded resource limits" errors, the Workers Paid plan ($5 a month) lifts the CPU limit.
+
+Tested with `wrangler dev` (Cloudflare's local runtime): real-data browser checks 9/9, admin checks 13/16 against a stand-in Supabase (the 3 misses are the image-upload step and the two steps after it, because the stand-in serves images over http; real Supabase uses https), quote email sent through Resend. Not yet tested on Cloudflare's servers.
+
+
 The app is a standard Next.js server app (pages plus API routes). It needs no database. On a serverless host, quotation requests reach you by email; add the Supabase free tier if you also want them listed in `/admin`.
 
 - **Netlify (free plan):** connect the GitHub repo; Netlify detects Next.js automatically. Build command `npm run build`.

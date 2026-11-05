@@ -198,3 +198,9 @@ test("live catalogue: create, edit, rename a brand, delete with merge, restore",
     else process.env.CATALOGUE_FILE = old;
   }
 });
+
+test("bundled catalogue lists every brand file (run npm run catalogue:bundle after adding one)", async () => {
+  const { BUNDLED_BRAND_FILES } = await import("@/lib/server/bundledCatalogue");
+  const onDisk = (await fs.readdir(path.join(process.cwd(), "data/brands"))).filter((f) => f.endsWith(".json")).sort();
+  assert.deepEqual(BUNDLED_BRAND_FILES.map((b) => path.basename(b.file)), onDisk);
+});
