@@ -519,12 +519,13 @@ await check("T14", "No demo products shown as real", async () => {
     all.push(...j.items);
     if (all.length >= j.total || !j.items.length) break;
   }
-  const realLooking = all.filter((p) => !p.isDemo && (/^DEMO-/i.test(p.panelCode) || p.brand !== "Kastamonu"));
-  assert(!realLooking.length, `non-demo products that are not Kastamonu: ${realLooking.map((p) => p.panelCode)}`);
+  const REAL_BRANDS = ["Kastamonu", "Glory", "Target", "Greenlam", "Polylac"]; // brands in Target_Panels_Collection_2026
+  const realLooking = all.filter((p) => !p.isDemo && (/^DEMO-/i.test(p.panelCode) || !REAL_BRANDS.includes(p.brand)));
+  assert(!realLooking.length, `non-demo products outside the collection's brands: ${realLooking.map((p) => p.panelCode)}`);
   const demoNoFlag = all.filter((p) => /^(DEMO|QA)-/.test(p.panelCode) && !p.isDemo);
   assert(!demoNoFlag.length, `demo/test codes without isDemo: ${demoNoFlag.map((p) => p.panelCode)}`);
-  const invented = all.filter((p) => p.brand === "Kastamonu" && (p.price != null || p.stockStatus || p.textureScale != null || p.roughness != null));
-  assert(!invented.length, `Kastamonu records with data not in the PDF: ${invented.map((p) => p.panelCode)}`);
+  const invented = all.filter((p) => REAL_BRANDS.includes(p.brand) && (p.price != null || p.stockStatus || p.textureScale != null || p.roughness != null));
+  assert(!invented.length, `brand records with data not in the PDF: ${invented.map((p) => p.panelCode)}`);
   // In the UI a demo product must be labelled when shown.
   await page.click("[data-testid=region-island_panels]");
   await search(page, "QA-IMPORT-001");
@@ -533,7 +534,7 @@ await check("T14", "No demo products shown as real", async () => {
   assert(/demo/i.test(label) || disclaimer, `demo product not labelled: "${label.replace(/\s+/g, " ")}"`);
   const body = await page.locator("body").innerText();
   assert(!/QAR|\bprice\b|in stock/i.test(body.replace(/No prices?[^.]*\./gi, "")), "price or stock text on page");
-  return `${all.length} products: ${all.filter((p) => !p.isDemo).length} real (all Kastamonu, no price/stock/scale/roughness invented), ${all.filter((p) => p.isDemo).length} flagged demo; demo card label "${label.replace(/\s+/g, " ").slice(0, 60)}", disclaimer ${disclaimer ? "visible" : "hidden"}`;
+  return `${all.length} products: ${all.filter((p) => !p.isDemo).length} real (all from the brand PDFs, no price/stock/scale/roughness invented), ${all.filter((p) => p.isDemo).length} flagged demo; demo card label "${label.replace(/\s+/g, " ").slice(0, 60)}", disclaimer ${disclaimer ? "visible" : "hidden"}`;
 });
 
 await ctx.close();
