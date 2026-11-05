@@ -11,7 +11,7 @@ export const SHARE_PARAM = "design";
 const MAX_TOKEN_LENGTH = 3000;
 
 // Short keys keep links compact.
-const REGION_SHORT: Record<string, string> = { upper_cabinets: "u", lower_cabinets: "l", tall_cabinets: "t", island_panels: "i", open_shelves: "s" };
+const REGION_SHORT: Record<string, string> = { upper_cabinets: "u", lower_cabinets: "l", tall_cabinets: "t", island_panels: "i", open_shelves: "s", worktop: "w", island_top: "o" };
 const SHORT_REGION = Object.fromEntries(Object.entries(REGION_SHORT).map(([k, v]) => [v, k]));
 
 export interface SharedDesign extends DesignSnapshot {

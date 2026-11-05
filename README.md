@@ -12,8 +12,10 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 
 - A real WebGL 3D kitchen (Babylon.js), built from geometry: cabinet carcasses, doors, drawers, handles, plinths, worktops, splashback, hob, sink, hood, oven, island with waterfall ends, open shelves, stools and pendants.
 - Six layouts from a model registry: **L-shaped with island**, **Straight**, **U-shaped**, **Galley** (two parallel runs with a breakfast bar), **L-shaped with peninsula** and **Straight with island**. Each starts with its own real panel combination. All are illustrative prototypes, not measured designs.
-- Separate material regions: upper cabinets, lower cabinets, tall units, kitchen island, open shelves. Changing a panel only changes the selected region.
-- Select a region from the cards under the viewport or by clicking a cabinet in 3D.
+- Separate material regions: upper cabinets, lower cabinets, tall units, kitchen island, open shelves, worktop and island top. Changing a panel only changes the selected region. The worktop and island top start as plain white quartz and can take any decor from the catalogue (marble, stone, woodgrain, uni colours).
+
+![Black marble worktop and walnut island top](docs/screenshots/worktop-island-top.jpg)
+- Select a region from the cards under the viewport or by clicking a cabinet or worktop in 3D.
 - Live material switching with:
   - 12 tileable procedural textures (woodgrain, stone, textile effect) and 8 plain colours, 21 DEMO products in all;
   - texture scale in real-world metres, so grain is not stretched across doors (see "Texture rules");

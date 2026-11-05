@@ -12,6 +12,10 @@ const proceduralRules = {
   tall_cabinets: { meshNamePatterns: ["^tall_cabinets__"], uvMode: "box-projection", grainAxis: "y" },
   island_panels: { meshNamePatterns: ["^island_panels__"], uvMode: "box-projection", grainAxis: "y" },
   open_shelves: { meshNamePatterns: ["^open_shelves__"], uvMode: "box-projection", grainAxis: "x" },
+  // Tops keep their white quartz until a decor is chosen; each top mesh sets its own grain axis
+  // so wood grain runs along the length of the run.
+  worktop: { meshNamePatterns: ["^worktop__"], uvMode: "box-projection", grainAxis: "x" },
+  island_top: { meshNamePatterns: ["^island_top__"], uvMode: "box-projection", grainAxis: "x" },
 } as const;
 
 export const KITCHEN_MODELS: KitchenModelDefinition[] = [
@@ -47,6 +51,7 @@ export const KITCHEN_MODELS: KitchenModelDefinition[] = [
       lower_cabinets: proceduralRules.lower_cabinets,
       tall_cabinets: proceduralRules.tall_cabinets,
       open_shelves: proceduralRules.open_shelves,
+      worktop: proceduralRules.worktop,
     },
     defaults: {
       upper_cabinets: ["1-216-T18-C-J-1", "DEMO-UC-104"], // Luna
@@ -69,6 +74,7 @@ export const KITCHEN_MODELS: KitchenModelDefinition[] = [
       lower_cabinets: proceduralRules.lower_cabinets,
       tall_cabinets: proceduralRules.tall_cabinets,
       open_shelves: proceduralRules.open_shelves,
+      worktop: proceduralRules.worktop,
     },
     defaults: {
       upper_cabinets: ["1-001-T18-C-J-1", "DEMO-UC-101"], // Corpus White
@@ -91,6 +97,7 @@ export const KITCHEN_MODELS: KitchenModelDefinition[] = [
       lower_cabinets: proceduralRules.lower_cabinets,
       tall_cabinets: proceduralRules.tall_cabinets,
       open_shelves: proceduralRules.open_shelves,
+      worktop: proceduralRules.worktop,
     },
     defaults: {
       upper_cabinets: ["1-505-T18-C-J-1", "DEMO-UC-103"], // Cashmere
