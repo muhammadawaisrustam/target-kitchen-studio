@@ -29,9 +29,9 @@ A browser-based 3D kitchen visualiser for decorative wood panels. Pick a cabinet
 - **Saved designs with variants** (Designs button): name a design, add variants (each a full set of panel choices, layout and camera view), switch between them, rename, delete. If a variant has unsaved changes, switching asks first. Designs are kept in the browser (see "Where data is stored").
 - **Summary & share**: a product-code summary per region (Item ID, decor, brand, board, finish, sheet size), a side-by-side comparison of saved variants, copy as text, CSV download, print, and a share link that reopens the exact design on any device.
 - **Request a quote**: a form (name, phone or email, optional company, area, preferred contact, notes, consent). The server re-checks every panel code against the catalogue, stores the enquiry and returns a reference such as `ENQ-20261024-VU9CAQ`. The success screen only appears after the server confirms the enquiry was saved; any failure shows an error and keeps the form filled in. No prices are shown.
-- **Admin** (`/admin`, off unless `ADMIN_PASSWORD` is set): list enquiries with their panel codes, open the customer's design, set status (new, contacted, quote sent, closed), add internal notes, export CSV. Products: see every catalogue source, import products from CSV or JSON (checked first, files with errors are refused), remove an import.
+- **Admin** (`/admin`, off unless `ADMIN_PASSWORD` is set): list enquiries with their panel codes, open the customer's design, set status (new, contacted, quote sent, closed), add internal notes, export CSV. **Editable catalogue**: add, edit, unpublish, delete and restore panels; manage brands, categories, sheet sizes, boards, finishes and colour groups; upload swatch and texture images; import and export spreadsheets (see "Editing the catalogue in the admin").
 
-Not built yet: email notification when an enquiry arrives (needs an email service and credentials), individual staff accounts, uploading new texture images from the admin page, and 3D side-by-side comparison.
+Not built yet: individual staff accounts and an audit trail of who changed what, automatic resizing of uploaded images, and 3D side-by-side comparison.
 
 ## Run it locally
 
@@ -111,7 +111,7 @@ scripts/
   e2e-brands.mjs               browser checks on real brand data
   e2e-stage3.mjs               browser checks for designs, sharing, quotes and admin
   e2e-layouts.mjs              browser checks for every kitchen layout (npm run test:e2e:layouts)
-supabase/schema.sql        optional table for storing enquiries in Supabase
+supabase/schema.sql        Supabase tables for enquiries and admin catalogue edits, and the image bucket
 src/
   app/                     Next.js pages and the /api/catalogue route
   app/admin/               admin page; app/api/admin/* admin API, app/api/enquiries quote API
@@ -204,7 +204,8 @@ Everything uses free options. Nothing is sent to a paid service.
 | Saved designs and variants | The visitor's browser (localStorage) | Only on that browser and device; lost if site data is cleared. Use a share link to move a design. |
 | Share links | Inside the link itself (`/?design=…`) | No server storage. The link holds the layout, panel codes and camera, not prices or personal data. |
 | Quotation enquiries | `DATA_DIR/enquiries.json` on the server, or Supabase if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set | The file option needs a server with a disk that is kept (any Node.js host or VPS). On Vercel or Netlify the disk is not kept, so set up Supabase (free tier, run `supabase/schema.sql`). Each request is also emailed (see below). A request counts as sent when it is stored or emailed; if neither works, the visitor is told it was not sent. Back up the file or database; contact details are personal data. |
-| Products imported from admin | `DATA_DIR/catalogue/*.json` on the server | Same disk rule as above. Brand PDF imports are part of the code (`data/brands/`) and are deployed with it. |
+| Catalogue edits and imports from admin | Supabase `catalogue_items` table, or `DATA_DIR/catalogue-admin.json` | Same disk rule as above. Brand PDF imports are part of the code (`data/brands/`) and are deployed with it; admin edits are applied on top. Older admin imports in `DATA_DIR/catalogue/*.json` are still read. |
+| Images uploaded in admin | Supabase Storage bucket `catalogue-media`, or `DATA_DIR/media/` | |
 
 ### Quotation emails
 
@@ -227,6 +228,29 @@ Set `ADMIN_PASSWORD` (at least 12 characters) in the server environment and open
 - Changes must come from the same site (Origin check). Sign-in is limited to 5 attempts per 15 minutes per address, and quote submissions to 5 per 10 minutes per address. These limits reset when the server restarts.
 - This is basic protection: one shared password, no individual staff accounts, no audit trail of who changed what, no two-factor sign-in. Always serve the site over HTTPS. For more staff or stricter needs, add Supabase Auth (free tier) with individual logins.
 
+## Editing the catalogue in the admin
+
+![Admin panels list](docs/screenshots/admin-01-panels.png)
+
+Tabs in `/admin`:
+
+| Tab | What you can do |
+| --- | --- |
+| Panels | Search and filter every panel (by brand, category, board, finish, size and status). Open a panel to edit any field: Item ID, decor name, brand, category, board, finish, colour group, sheet size, thumbnail, texture, plain colour, texture scale and rotation, grain, roughness, stock, notes, source. Add a new panel. Select many panels to publish, unpublish, delete, or change their brand, category, board, finish, colour group or size in one go. Deleted panels from a brand file can be restored; "Restore original" undoes every edit. |
+| Brands, Categories, Sizes, Boards/finishes/colours | Add entries, edit them (renaming updates every panel that uses the entry), add a description and a logo or image, set the order of the studio's filter lists, and switch an entry off to hide all its panels from the studio. An entry that panels still use can only be deleted by moving those panels to another entry. Sheet sizes are offered as presets when adding or editing a panel. |
+| Import and export | Import panels from CSV or JSON (checked first; if any row has an error nothing is imported; tick "Update panels that already exist" to overwrite by Item ID). Export every panel as CSV (the same columns as the import, so it can be edited in a spreadsheet and imported back) or a full JSON backup. |
+
+How it is stored: the brand files in `data/brands/` stay exactly as deployed. The admin's changes are saved separately (one row per edited panel or list entry) and applied on top, so a new brand import can be deployed at any time without losing edits. If an added panel's Item ID later appears in a brand file, the brand file wins and the admin shows a warning. Changes show in the studio straight away on the same server and within about 10 seconds on other serverless instances.
+
+| Data | Where |
+| --- | --- |
+| Catalogue changes | Supabase table `public.catalogue_items` when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, otherwise `DATA_DIR/catalogue-admin.json` |
+| Uploaded images (JPG, PNG, WebP, up to 4 MB) | Supabase Storage public bucket `catalogue-media`, otherwise `DATA_DIR/media/` served at `/api/media/<file>` |
+
+**On Netlify or Vercel, Supabase is required** for the admin to save changes, because their disks are not kept. Run `supabase/schema.sql` once in the Supabase SQL editor (it creates the `enquiries` and `catalogue_items` tables and the `catalogue-media` bucket), set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the site's environment variables, and redeploy. Without it the admin says where changes would be saved and shows a clear error when a save fails; the studio keeps working from the brand files.
+
+Browser checks for these screens: start a server with `ADMIN_PASSWORD` and `DATA_DIR`, then `ADMIN_PASSWORD=… npm run test:e2e:admin` (16 checks: edit, add, duplicate refused, bulk publish, delete and restore, brand rename/switch-off/order, category delete with move, sizes, image upload, CSV import and export, sign-in required, phone width).
+
 ## Deployment (free options only)
 
 The app is a standard Next.js server app (pages plus API routes). It needs no database. On a serverless host, quotation requests reach you by email; add the Supabase free tier if you also want them listed in `/admin`.
@@ -235,7 +259,7 @@ The app is a standard Next.js server app (pages plus API routes). It needs no da
 - **Vercel (Hobby, free):** import the repo; no settings needed. Vercel's Hobby plan is limited to non-commercial use, so it fits a private demo but a public company site would need a different plan or host.
 - **Any Node.js host or a small VPS:** `npm ci && npm run build && npm start` (port 3000, or set `PORT`). Enquiries and admin imports are saved in `DATA_DIR` on its disk; back that folder up.
 
-On Netlify and Vercel, set up quotation emails (or Supabase) or the quote form cannot send (see "Where data is stored"), and admin product import does not work because their disks are not kept; import with the command-line tools and redeploy instead.
+On Netlify and Vercel, set up quotation emails (or Supabase) or the quote form cannot send (see "Where data is stored"), and connect Supabase for the admin's catalogue editing and image uploads, because their disks are not kept.
 
 `data/*.json` is bundled with the API route for serverless hosts (see `outputFileTracingIncludes` in `next.config.ts`).
 

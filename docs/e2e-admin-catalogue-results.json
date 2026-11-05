@@ -1,0 +1,66 @@
+[
+  {
+    "name": "panels list shows the catalogue with status counts",
+    "pass": true
+  },
+  {
+    "name": "edit a panel's name; the studio shows the new name",
+    "pass": true
+  },
+  {
+    "name": "add a new panel with a new brand and category",
+    "pass": true
+  },
+  {
+    "name": "duplicate Item ID is refused with a clear message",
+    "pass": true
+  },
+  {
+    "name": "bulk unpublish hides panels from the studio; publish brings them back",
+    "pass": true
+  },
+  {
+    "name": "delete a brand-file panel, then restore the original",
+    "pass": true
+  },
+  {
+    "name": "brands: rename a brand updates its panels; switching off hides them",
+    "pass": true
+  },
+  {
+    "name": "brands: order set in the admin is the studio filter order",
+    "pass": true
+  },
+  {
+    "name": "categories: deleting one in use requires moving its panels",
+    "pass": true
+  },
+  {
+    "name": "sizes: add a size, it is offered in the panel editor",
+    "pass": true
+  },
+  {
+    "name": "upload an image for a panel thumbnail",
+    "pass": true
+  },
+  {
+    "name": "import: check, then update existing panels from a CSV",
+    "pass": true
+  },
+  {
+    "name": "export CSV contains the edited catalogue",
+    "pass": true
+  },
+  {
+    "name": "admin APIs refuse requests without sign-in",
+    "pass": true
+  },
+  {
+    "name": "phone width: panels tab has no horizontal page scroll",
+    "pass": true
+  },
+  {
+    "name": "no page errors",
+    "pass": true
+  }
+]
