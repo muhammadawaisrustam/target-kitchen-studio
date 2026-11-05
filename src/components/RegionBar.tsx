@@ -22,15 +22,15 @@ interface Props {
   state: Partial<Record<RegionId, RegionState>>;
 }
 
-/** Region selector that doubles as the design summary: one card per cabinet region. */
+/** Region selector that doubles as the design summary: one card per cabinet or worktop region. */
 export default function RegionBar({ regions, active, onSelect, selections, products, state }: Props) {
   return (
-    <section aria-label="Cabinet regions and design summary" className="shrink-0 border-b border-line bg-surface lg:mt-3 lg:rounded-2xl lg:border">
+    <section aria-label="Kitchen regions and design summary" className="shrink-0 border-b border-line bg-surface lg:mt-3 lg:rounded-2xl lg:border">
       <div className="flex items-baseline justify-between px-4 pt-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Apply finish to</h2>
-        <span className="text-[11px] text-muted">Tip: click a cabinet in the 3D view</span>
+        <span className="text-[11px] text-muted">Tip: click a cabinet or top in 3D</span>
       </div>
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2" role="radiogroup" aria-label="Cabinet region">
+      <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-2" role="radiogroup" aria-label="Kitchen region">
         {regions.length === 0 && <p className="py-3 text-sm text-muted">Loading regions…</p>}
         {regions.map((r) => {
           const code = selections[r];

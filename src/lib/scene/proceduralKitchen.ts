@@ -268,7 +268,7 @@ function tallUnit(b: Builder, f: Frame, u0: number, w: number, kind: "oven" | "f
 }
 
 function worktop(b: Builder, f: Frame, u0: number, u1: number, depth = BASE_DEPTH + DOOR + 0.02) {
-  b.runBox("fixed__worktop", f, u0, u1, 0, depth, BASE_TOP, BASE_TOP + WORKTOP, b.mats.quartz);
+  b.runBox("worktop__top", f, u0, u1, 0, depth, BASE_TOP, BASE_TOP + WORKTOP, b.mats.quartz, { grainAxis: f.axis });
 }
 
 function splashback(b: Builder, f: Frame, u0: number, u1: number) {
@@ -418,7 +418,7 @@ function buildLIsland(b: Builder) {
   b.box("island_panels__back_panel", [islandX0, 0, -2.32], [islandX1, BASE_TOP, -2.3], b.mats.neutral);
   b.box("island_panels__end_panel", [islandX0 - 0.02, 0, -2.62], [islandX0, top, -1.72], b.mats.neutral, { grainAxis: "y" });
   b.box("island_panels__end_panel", [islandX1, 0, -2.62], [islandX1 + 0.02, top, -1.72], b.mats.neutral, { grainAxis: "y" });
-  b.box("fixed__worktop", [islandX0, BASE_TOP, -2.62], [islandX1, top, -1.72], b.mats.quartz);
+  b.box("island_top__top", [islandX0, BASE_TOP, -2.62], [islandX1, top, -1.72], b.mats.quartz, { grainAxis: "x" });
   b.cylinder("fixed__bowl", [2.9, top + 0.04, -2.05], 0.08, 0.3, b.mats.ceramicDark, 32);
 
   stool(b, 2.05, -2.85);
@@ -462,7 +462,7 @@ function island(b: Builder, x0: number, units: BaseKind[], zCabinetBack: number,
   b.box("island_panels__back_panel", [x0, 0, zCabinetBack - 0.02], [x1, BASE_TOP, zCabinetBack], b.mats.neutral);
   b.box("island_panels__end_panel", [x0 - 0.02, 0, zSeat], [x0, top, zFront], b.mats.neutral, { grainAxis: "y" });
   b.box("island_panels__end_panel", [x1, 0, zSeat], [x1 + 0.02, top, zFront], b.mats.neutral, { grainAxis: "y" });
-  b.box("fixed__worktop", [x0, BASE_TOP, zSeat], [x1, top, zFront], b.mats.quartz);
+  b.box("island_top__top", [x0, BASE_TOP, zSeat], [x1, top, zFront], b.mats.quartz, { grainAxis: "x" });
   for (const x of seats) stool(b, x, zSeat - 0.23);
   for (const x of seats) pendant(b, x, (zSeat + zFront) / 2);
 }
@@ -540,7 +540,7 @@ function buildGalley(b: Builder) {
   b.runBox("lower_cabinets__back_panel", opp, 0.6, 3.6, -0.02, 0, 0, BASE_TOP, b.mats.neutral);
   b.runBox("lower_cabinets__end_panel", opp, 0.6 - DOOR, 0.6, -0.32, BASE_DEPTH + DOOR, 0, top, b.mats.neutral);
   b.runBox("lower_cabinets__end_panel", opp, 3.6, 3.6 + DOOR, -0.32, BASE_DEPTH + DOOR, 0, top, b.mats.neutral);
-  b.runBox("fixed__worktop", opp, 0.6, 3.6, -0.32, BASE_DEPTH + DOOR + 0.02, BASE_TOP, top, b.mats.quartz);
+  b.runBox("worktop__top", opp, 0.6, 3.6, -0.32, BASE_DEPTH + DOOR + 0.02, BASE_TOP, top, b.mats.quartz, { grainAxis: opp.axis });
   hob(b, opp, 1.2);
   for (const x of [1.6, 2.4, 3.2]) stool(b, x, zOpp - 0.55);
   for (const x of [1.4, 2.6]) pendant(b, x, zOpp + 0.12);
@@ -588,7 +588,7 @@ function buildPeninsula(b: Builder) {
   baseUnit(b, "island_panels", pen, 1.8, 0.6, "drawers");
   b.box("island_panels__back_panel", [xp, 0, -2.4], [xp + 0.02, BASE_TOP, 0], b.mats.neutral);
   b.box("island_panels__end_panel", [xp - wtDepth, 0, -2.42], [xp + 0.34, top, -2.4], b.mats.neutral, { grainAxis: "y" });
-  b.box("fixed__worktop", [xp - wtDepth, BASE_TOP, -2.4], [xp + 0.34, top, 0], b.mats.quartz);
+  b.box("island_top__top", [xp - wtDepth, BASE_TOP, -2.4], [xp + 0.34, top, 0], b.mats.quartz, { grainAxis: "z" });
   for (const z of [-1.0, -1.8]) stool(b, xp + 0.55, z);
   for (const z of [-1.0, -1.8]) pendant(b, xp + 0.05, z);
   b.cylinder("fixed__bowl", [xp - 0.2, top + 0.04, -1.4], 0.08, 0.3, b.mats.ceramicDark, 32);

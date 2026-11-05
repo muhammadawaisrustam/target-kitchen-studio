@@ -84,3 +84,11 @@ test("summary: one row per region, unknown details left empty, CSV is spreadshee
   assert.equal(neutraliseCell("-2+3"), "'-2+3");
   assert.equal(neutraliseCell("@SUM(A1)"), "'@SUM(A1)");
 });
+
+test("share links: worktop and island top panels survive the round trip", () => {
+  const input = { ...snap("1-026-T18-C-J-1") };
+  input.selections = { ...input.selections, worktop: "3-134-T18-M-M-2", island_top: "3-135-T18-M-M-2" };
+  const out = decodeShareToken(encodeShareToken(input))!;
+  assert.equal(out.selections.worktop, "3-134-T18-M-M-2");
+  assert.equal(out.selections.island_top, "3-135-T18-M-M-2");
+});
