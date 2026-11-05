@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export const GET = adminRoute<Ctx>(async (_request, ctx) => {
   const { id } = await ctx.params;
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const product = live.admin.find((p) => p.id === id);
   if (!product) throw new CatalogueEditError("Panel not found.", 404);
   return json({ product });

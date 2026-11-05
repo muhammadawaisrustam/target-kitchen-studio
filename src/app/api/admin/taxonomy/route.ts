@@ -13,7 +13,7 @@ const kindOf = (v: unknown): TaxonomyKind => {
 
 /** GET: every list (brands, categories, boards, finishes, colour groups, sizes) with panel counts. */
 export const GET = adminRoute(async () => {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const store = getCatalogueStore();
   const totals = { panels: live.products.length, visible: live.visible.length, edits: live.edits.length };
   return json({ taxonomy: live.taxonomy, totals, conflicts: live.conflicts, storage: { kind: store.kind, description: store.description } });

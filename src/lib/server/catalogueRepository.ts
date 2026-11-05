@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Product } from "@/lib/catalogue/schema";
 import { parseImportFile, validateCatalogueRecords, type ValidationIssue, type ValidationReport } from "@/lib/catalogue/validate";
+import { BUNDLED_BRAND_FILES, BUNDLED_DEMO_FILE } from "./bundledCatalogue";
 import { dataDir } from "./dataDir";
 
 /**
@@ -28,15 +29,22 @@ let cache: Cache | null = null;
 
 export const importDir = () => path.join(dataDir(), "catalogue");
 
-async function bundledFiles(): Promise<string[]> {
+type BundledSource = { file: string; read: () => Promise<unknown>; stamp: () => Promise<string> };
+
+/**
+ * Brand files come from the build (static imports, see scripts/bundle-catalogue.mjs) so they
+ * work on hosts without a file system. CATALOGUE_FILE still reads the named files from disk.
+ */
+async function bundledSources(): Promise<BundledSource[]> {
   const root = process.cwd();
   if (process.env.CATALOGUE_FILE) {
-    return process.env.CATALOGUE_FILE.split(",").map((f) => f.trim()).filter(Boolean).map((f) => path.resolve(root, f));
+    return process.env.CATALOGUE_FILE.split(",").map((f) => f.trim()).filter(Boolean).map((f) => {
+      const file = path.resolve(root, f);
+      return { file, read: async () => JSON.parse(await fs.readFile(file, "utf8")), stamp: async () => String((await fs.stat(file)).mtimeMs) };
+    });
   }
-  const brandDir = path.join(root, "data/brands");
-  const brandFiles = await fs.readdir(brandDir).catch(() => [] as string[]);
-  const real = brandFiles.filter((f) => f.endsWith(".json")).sort().map((f) => path.join(brandDir, f));
-  return real.length ? real : [path.join(root, "data/demo-catalogue.json")];
+  const list = BUNDLED_BRAND_FILES.length ? BUNDLED_BRAND_FILES : [BUNDLED_DEMO_FILE];
+  return list.map((b) => ({ file: path.join(root, b.file), read: async () => b.data, stamp: async () => "bundled" }));
 }
 
 async function importedFiles(): Promise<string[]> {
@@ -48,23 +56,26 @@ async function importedFiles(): Promise<string[]> {
 const recordsOf = (raw: unknown): unknown[] => (Array.isArray(raw) ? raw : ((raw as { products?: unknown[] }).products ?? []));
 
 export async function loadCatalogue(): Promise<Cache> {
-  const bundled = await bundledFiles();
+  const bundled = await bundledSources();
   const imported = await importedFiles();
-  const files = [...bundled, ...imported];
-  const stats = await Promise.all(files.map((f) => fs.stat(f)));
-  const key = files.map((f, i) => `${f}:${stats[i]!.mtimeMs}`).join("|");
+  const sourcesIn = [
+    ...bundled.map((b) => ({ ...b, isImported: false })),
+    ...imported.map((file) => ({ file, isImported: true, read: async () => JSON.parse(await fs.readFile(file, "utf8")) as unknown, stamp: async () => String((await fs.stat(file)).mtimeMs) })),
+  ];
+  const files = sourcesIn.map((s) => s.file);
+  const stamps = await Promise.all(sourcesIn.map((s) => s.stamp()));
+  const key = files.map((f, i) => `${f}:${stamps[i]}`).join("|");
   if (cache?.key === key) return cache;
   const records: unknown[] = [];
   const sources: CatalogueSource[] = [];
-  for (const file of files) {
-    const raw = JSON.parse(await fs.readFile(file, "utf8")) as { label?: string; importedAt?: string };
+  for (const src of sourcesIn) {
+    const raw = (await src.read()) as { label?: string; importedAt?: string };
     const list = recordsOf(raw);
     records.push(...list);
-    const isImported = imported.includes(file);
     sources.push({
-      file: path.relative(process.cwd(), file),
-      kind: isImported ? "imported" : "bundled",
-      slug: isImported ? path.basename(file, ".json") : undefined,
+      file: path.relative(process.cwd(), src.file),
+      kind: src.isImported ? "imported" : "bundled",
+      slug: src.isImported ? path.basename(src.file, ".json") : undefined,
       label: raw?.label,
       importedAt: raw?.importedAt,
       records: list.length,
@@ -105,7 +116,8 @@ export async function checkImport(label: string, fileName: string, content: stri
 
   // Everything except this import's previous version.
   const others: unknown[] = [];
-  for (const file of [...(await bundledFiles()), ...(await importedFiles())]) {
+  for (const b of await bundledSources()) others.push(...recordsOf(await b.read()));
+  for (const file of await importedFiles()) {
     if (file === own) continue;
     others.push(...recordsOf(JSON.parse(await fs.readFile(file, "utf8"))));
   }

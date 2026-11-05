@@ -66,9 +66,13 @@ function parseRows(rows: StoreRow[]) {
   return { edits, taxonomy };
 }
 
-export async function loadLiveCatalogue(): Promise<LiveCatalogue> {
+/**
+ * `fresh: true` always reads the store: the admin and every change use it, so they never act on
+ * (or show) data another server instance has since changed. The studio uses the short cache.
+ */
+export async function loadLiveCatalogue({ fresh = false }: { fresh?: boolean } = {}): Promise<LiveCatalogue> {
   const base = await loadCatalogue();
-  if (cache && cache.base === base && Date.now() - cache.at < CACHE_MS) return cache.value;
+  if (!fresh && cache && cache.base === base && Date.now() - cache.at < CACHE_MS) return cache.value;
   const { edits, taxonomy: storedTaxonomy } = parseRows(await getCatalogueStore().list());
   const merged = mergeProductEdits(base.products, edits);
   if (merged.conflicts.length) console.warn("[catalogue] edits not applied:", merged.conflicts.slice(0, 10));
@@ -91,7 +95,7 @@ export async function loadLiveCatalogue(): Promise<LiveCatalogue> {
 /** Same as loadLiveCatalogue, but if the edits store cannot be read the site still works from the brand files. */
 export async function loadPublicCatalogue(): Promise<{ products: Product[]; all: Product[]; isDemo: boolean; taxonomy?: LiveCatalogue["taxonomy"] }> {
   try {
-    const live = await loadLiveCatalogue();
+    const live = await loadLiveCatalogue({ fresh: true });
     return { products: live.visible, all: live.products, isDemo: live.isDemo, taxonomy: live.taxonomy };
   } catch (err) {
     console.error("[catalogue] admin edits could not be loaded; serving the brand files only", err);
@@ -122,7 +126,7 @@ function checkProduct(live: LiveCatalogue, raw: unknown, existingId?: string): P
 }
 
 export async function createProduct(input: Record<string, unknown>): Promise<Product> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const code = typeof input.panelCode === "string" ? input.panelCode : "";
   let id = typeof input.id === "string" && input.id.trim() ? input.id.trim() : newProductId(typeof input.brand === "string" ? input.brand : undefined, code);
   if (live.admin.some((p) => p.id === id)) {
@@ -138,7 +142,7 @@ export async function createProduct(input: Record<string, unknown>): Promise<Pro
 }
 
 export async function updateProduct(id: string, input: Record<string, unknown>): Promise<Product> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const current = live.admin.find((p) => p.id === id);
   if (!current) throw new CatalogueEditError("Panel not found.", 404);
   const product = checkProduct(live, { ...input, id }, id);
@@ -149,7 +153,7 @@ export async function updateProduct(id: string, input: Record<string, unknown>):
 
 /** Deletes a panel. A panel from a brand file is hidden (it can be restored); an added panel is removed. */
 export async function deleteProducts(ids: string[]): Promise<number> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const put: StoreRow[] = [];
   const remove: { kind: string; id: string }[] = [];
   for (const id of ids) {
@@ -164,7 +168,7 @@ export async function deleteProducts(ids: string[]): Promise<number> {
 
 /** Removes the admin's edit so a panel from a brand file goes back to what the file says. */
 export async function restoreProducts(ids: string[]): Promise<number> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const keys = ids.filter((id) => live.baseIds.has(id) && live.edits.some((e) => e.id === id)).map((id) => ({ kind: "product", id }));
   if (keys.length) await getCatalogueStore().remove(keys);
   invalidateLiveCatalogue();
@@ -174,7 +178,7 @@ export async function restoreProducts(ids: string[]): Promise<number> {
 /** Applies the same field changes to many panels (e.g. publish, change category). Every result is validated first. */
 export async function bulkUpdateProducts(ids: string[], patch: Record<string, unknown>): Promise<number> {
   if ("panelCode" in patch || "id" in patch) throw new CatalogueEditError("Panel codes and ids cannot be changed in bulk.");
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const unset = Object.entries(patch).filter(([, v]) => v === null).map(([k]) => k);
   const rows: StoreRow[] = [];
   for (const id of ids) {
@@ -196,7 +200,7 @@ export async function bulkUpdateProducts(ids: string[], patch: Record<string, un
  * already exist are updated only when `updateExisting` is set. Nothing is saved if any row has an error.
  */
 export async function importProducts(records: unknown[], { updateExisting, dryRun }: { updateExisting: boolean; dryRun: boolean }) {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const byCode = new Map(live.products.map((p) => [codeKey(p.panelCode), p]));
   // Keep the existing product's id for codes that are already in the catalogue, and fill in ids for new rows.
   const prepared = records.map((r) => {
@@ -233,7 +237,7 @@ export async function saveTaxonomy(input: unknown, previousId?: string): Promise
   if (item.kind === "size" && !item.widthMm && !item.heightMm && !item.thicknessMm) throw new CatalogueEditError("Give a width, length or thickness.");
   const id = taxonomyId(item);
   if (!id) throw new CatalogueEditError("Use letters or numbers in the name.");
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const list = live.taxonomy[item.kind];
   if (id !== previousId && list.some((e) => e.id === id)) throw new CatalogueEditError(`"${item.name}" already exists. Edit that entry, or use "Merge into" to combine them.`, 409);
   if (previousId && !list.some((e) => e.id === previousId)) throw new CatalogueEditError("Entry not found.", 404);
@@ -263,7 +267,7 @@ function cascade(live: LiveCatalogue, kind: TaxonomyKind, fromId: string, to: Ta
  * (`mergeInto`), otherwise the delete is refused.
  */
 export async function deleteTaxonomy(kind: TaxonomyKind, id: string, mergeInto?: string): Promise<{ productsUpdated: number }> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const entry = live.taxonomy[kind].find((e) => e.id === id);
   if (!entry) throw new CatalogueEditError("Entry not found.", 404);
   let rows: StoreRow[] = [];
@@ -282,7 +286,7 @@ export async function deleteTaxonomy(kind: TaxonomyKind, id: string, mergeInto?:
 
 /** Saves the display order of a list (ids in the order wanted). Entries not yet stored are stored. */
 export async function reorderTaxonomy(kind: TaxonomyKind, ids: string[]): Promise<void> {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const list = live.taxonomy[kind];
   const rows: StoreRow[] = [];
   ids.forEach((id, i) => {

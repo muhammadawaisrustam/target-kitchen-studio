@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 /** GET ?format=csv|json: every live panel (all statuses), in the import format, so it can be edited and imported back. */
 export const GET = adminRoute(async (request) => {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const format = new URL(request.url).searchParams.get("format") === "json" ? "json" : "csv";
   const stamp = new Date().toISOString().slice(0, 10);
   const products = live.admin.filter((p) => p.origin !== "deleted").map(stripOrigin);

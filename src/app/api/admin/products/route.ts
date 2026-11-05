@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 /** GET: panels for the admin table, with search, list filters, status and paging. */
 export const GET = adminRoute(async (request) => {
-  const live = await loadLiveCatalogue();
+  const live = await loadLiveCatalogue({ fresh: true });
   const result = queryAdminProducts(live.admin, parseAdminProductParams(new URL(request.url).searchParams));
   const store = getCatalogueStore();
   return json({ ...result, conflicts: live.conflicts, storage: { kind: store.kind, description: store.description } });
