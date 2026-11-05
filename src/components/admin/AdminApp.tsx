@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Enquiry, EnquiryStatus } from "@/lib/enquiries/schema";
 import { ENQUIRY_STATUSES } from "@/lib/enquiries/schema";
+import PanelsAdmin from "./PanelsAdmin";
 import ProductsAdmin from "./ProductsAdmin";
+import { useTaxonomy } from "./shared";
+import TaxonomyAdmin from "./TaxonomyAdmin";
 
 type Session = { enabled: boolean; reason?: string; signedIn: boolean; storage?: { kind: string; description: string } };
 
@@ -16,7 +19,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
 
 export default function AdminApp() {
   const [session, setSession] = useState<Session | null>(null);
-  const [tab, setTab] = useState<"enquiries" | "products">("enquiries");
+  const [tab, setTab] = useState<Tab>("enquiries");
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
@@ -61,14 +64,14 @@ export default function AdminApp() {
         {session?.enabled && !session.signedIn && <Login onDone={refresh} />}
         {session?.signedIn && (
           <>
-            <nav className="mb-5 flex gap-2" aria-label="Admin sections">
-              {(["enquiries", "products"] as const).map((t) => (
-                <button key={t} type="button" onClick={() => setTab(t)} aria-current={tab === t} className={`rounded-full px-4 py-2 text-sm font-medium ${tab === t ? "bg-ink text-white" : "border border-line bg-surface hover:bg-canvas"}`} data-testid={`admin-tab-${t}`}>
-                  {t === "enquiries" ? "Quote enquiries" : "Products and import"}
+            <nav className="mb-5 flex gap-2 overflow-x-auto pb-1" aria-label="Admin sections">
+              {TABS.map(([t, label]) => (
+                <button key={t} type="button" onClick={() => setTab(t)} aria-current={tab === t} className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ${tab === t ? "bg-ink text-white" : "border border-line bg-surface hover:bg-canvas"}`} data-testid={`admin-tab-${t}`}>
+                  {label}
                 </button>
               ))}
             </nav>
-            {tab === "enquiries" ? <EnquiriesAdmin onSignedOut={refresh} /> : <ProductsAdmin onSignedOut={refresh} />}
+            {tab === "enquiries" ? <EnquiriesAdmin onSignedOut={refresh} /> : <CatalogueAdmin tab={tab} onSignedOut={refresh} />}
             <p className="mt-10 text-xs text-muted">
               Sign-in uses one shared password checked on the server, with an 8-hour session cookie. There are no individual staff accounts, password reset or two-factor sign-in yet. Always use the site over HTTPS.
             </p>
@@ -77,6 +80,28 @@ export default function AdminApp() {
       </div>
     </div>
   );
+}
+
+type Tab = "enquiries" | "panels" | "brands" | "categories" | "sizes" | "lists" | "products";
+const TABS: [Tab, string][] = [
+  ["enquiries", "Quote enquiries"],
+  ["panels", "Panels"],
+  ["brands", "Brands"],
+  ["categories", "Categories"],
+  ["sizes", "Sizes"],
+  ["lists", "Boards, finishes, colours"],
+  ["products", "Import and export"],
+];
+
+/** Catalogue tabs share one copy of the lists, reloaded after every change. */
+function CatalogueAdmin({ tab, onSignedOut }: { tab: Exclude<Tab, "enquiries">; onSignedOut: () => void }) {
+  const { data, error, reload } = useTaxonomy(onSignedOut);
+  if (error) return <p className="rounded-lg bg-warn-soft p-3 text-sm text-warn" role="alert">{error}</p>;
+  if (!data) return <p className="text-muted">Loading…</p>;
+  if (tab === "panels") return <PanelsAdmin taxonomy={data.taxonomy} onChanged={reload} onSignedOut={onSignedOut} />;
+  if (tab === "products") return <ProductsAdmin onSignedOut={onSignedOut} onChanged={reload} />;
+  const kinds = tab === "brands" ? (["brand"] as const) : tab === "categories" ? (["category"] as const) : tab === "sizes" ? (["size"] as const) : (["board", "finish", "colourFamily"] as const);
+  return <TaxonomyAdmin key={tab} kinds={[...kinds]} taxonomy={data.taxonomy} storage={data.storage} onChanged={reload} />;
 }
 
 function Login({ onDone }: { onDone: () => void }) {

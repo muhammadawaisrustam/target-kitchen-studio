@@ -487,7 +487,6 @@ await check("T13", "Import products without code edits (admin CSV import)", asyn
   await p.keyboard.press("Enter");
   await p.getByText(new RegExp(reference || "ENQ-")).first().waitFor({ timeout: 15_000 });
   await p.click("[data-testid=admin-tab-products]");
-  await p.fill("[data-testid=import-label]", "QA import");
   await p.setInputFiles("[data-testid=import-file]", file);
   const steps = [];
   await p.click("[data-testid=import-check]");

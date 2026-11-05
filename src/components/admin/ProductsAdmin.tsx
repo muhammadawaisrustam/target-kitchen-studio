@@ -8,8 +8,8 @@ type Source = { file: string; kind: "bundled" | "imported"; slug?: string; label
 type Overview = { sources: Source[]; totalProducts: number; published: number; brands: string[]; isDemo: boolean; errorCount: number; errors: ValidationIssue[] };
 type ImportResult = {
   saved: boolean;
-  slug: string;
-  replacesExisting: boolean;
+  added: number;
+  updated: number;
   totalRecords: number;
   validCount: number;
   errors: ValidationIssue[];
@@ -21,16 +21,16 @@ type ImportResult = {
 
 const issueText = (i: ValidationIssue) => `${i.row ? `Row ${i.row}` : ""}${i.panelCode ? ` ${i.panelCode}` : ""}${i.field ? ` [${i.field}]` : ""}: ${i.message}`.trim();
 
-export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void }) {
+export default function ProductsAdmin({ onSignedOut, onChanged }: { onSignedOut: () => void; onChanged?: () => void }) {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [label, setLabel] = useState("");
+  const [updateExisting, setUpdateExisting] = useState(false);
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
   const [checked, setChecked] = useState<{ key: string; result: ImportResult } | null>(null);
   const [busy, setBusy] = useState<"check" | "import" | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const key = `${label.trim()}|${file?.name}|${file?.content.length}`;
+  const key = `${updateExisting}|${file?.name}|${file?.content.length}`;
 
   const load = useCallback(() => {
     api<Overview>("/api/admin/catalogue").then(setOverview, (e: Error & { status?: number }) => (e.status === 401 ? onSignedOut() : setError(e.message)));
@@ -43,11 +43,12 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
     setError(null);
     setDone(null);
     try {
-      const result = await api<ImportResult>("/api/admin/catalogue/import", { method: "POST", body: JSON.stringify({ label, fileName: file.name, content: file.content, dryRun }) });
+      const result = await api<ImportResult>("/api/admin/products/import", { method: "POST", body: JSON.stringify({ fileName: file.name, content: file.content, updateExisting, dryRun }) });
       setChecked({ key, result });
       if (!dryRun && result.saved) {
-        setDone(`Imported ${result.validCount} product(s) as "${label.trim()}". They are live in the studio now.`);
+        setDone(`Imported ${result.validCount} panel(s): ${result.added} added, ${result.updated} updated. Published ones are in the studio now.`);
         load();
+        onChanged?.();
       }
     } catch (e) {
       const err = e as Error & { body?: ImportResult };
@@ -71,12 +72,22 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
   };
 
   const result = checked?.key === key ? checked.result : null;
-  const canImport = !!file && !!label.trim() && !!result && result.errorCount === 0 && result.validCount > 0 && !result.saved;
+  const canImport = !!file && !!result && result.errorCount === 0 && result.validCount > 0 && !result.saved;
 
   return (
     <section aria-label="Products" className="space-y-8" data-testid="admin-products">
       <div>
-        <h1 className="font-display text-2xl">Products</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-display text-2xl">Import, export and sources</h1>
+          <span className="ml-auto flex gap-2">
+            <a href="/api/admin/products/export?format=csv" className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm hover:bg-canvas" data-testid="export-panels-csv">
+              Export all panels (CSV)
+            </a>
+            <a href="/api/admin/products/export?format=json" className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm hover:bg-canvas" data-testid="export-panels-json">
+              Backup (JSON)
+            </a>
+          </span>
+        </div>
         {overview && (
           <p className="mt-1 text-sm text-muted" data-testid="catalogue-overview">
             {overview.totalProducts} products ({overview.published} published) · Brands: {overview.brands.join(", ") || "none"}
@@ -103,7 +114,7 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
                       {s.label ?? s.file}
                       <span className="block font-mono text-xs text-muted">{s.file}</span>
                     </td>
-                    <td className="px-3 py-2">{s.kind === "bundled" ? "Part of the deployed site" : "Imported here"}</td>
+                    <td className="px-3 py-2">{s.kind === "bundled" ? "Part of the deployed site" : "Older admin import (server file)"}</td>
                     <td className="px-3 py-2">{s.records}</td>
                     <td className="px-3 py-2">{s.importedAt ? new Date(s.importedAt).toLocaleString() : "—"}</td>
                     <td className="px-3 py-2 text-right">
@@ -129,7 +140,10 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
             </table>
           </div>
         )}
-        <p className="mt-2 text-xs text-muted">Brand files that are part of the deployed site (such as PDF imports) are changed with the command-line importer and a new deployment, not here.</p>
+        <p className="mt-2 text-xs text-muted">
+          Brand files are deployed with the site. You can edit, hide or delete any of their panels on the Panels tab; the files themselves stay unchanged, so
+          a new brand import can be deployed without losing your edits.
+        </p>
       </div>
 
       <form
@@ -140,22 +154,22 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
         }}
         data-testid="import-form"
       >
-        <h2 className="font-display text-xl">Import products from a spreadsheet</h2>
+        <h2 className="font-display text-xl">Import panels from a spreadsheet</h2>
         <p className="mt-1 text-sm text-muted">
           Use the{" "}
           <a href="/catalogue-template.csv" download className="text-accent underline">
             CSV template
           </a>{" "}
-          (one row per panel) or a JSON file. The file is checked first; nothing is saved until you press Import. Rows with errors are never imported, and nothing is filled in automatically.
+          (one row per panel), a JSON file, or an export from this page edited in a spreadsheet. The file is checked first; nothing is saved until you press Import. If any row has an error nothing is imported, and nothing is filled in automatically.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="import-label" className="text-sm font-medium">
-              Import name
-            </label>
-            <input id="import-label" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} placeholder="e.g. Egger 2026" className="mt-1 w-full rounded-lg border border-line px-3 py-2" data-testid="import-label" />
-            <p className="mt-1 text-xs text-muted">Importing again with the same name replaces that import.</p>
-          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={updateExisting} onChange={(e) => setUpdateExisting(e.target.checked)} data-testid="import-update" />
+            <span>
+              Update panels that already exist (matched by Item ID)
+              <span className="block text-xs text-muted">Off: rows whose Item ID is already in the catalogue are reported as errors.</span>
+            </span>
+          </label>
           <div>
             <label htmlFor="import-file" className="text-sm font-medium">
               File (.csv or .json, up to 5 MB)
@@ -178,7 +192,7 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="submit" disabled={!file || !label.trim() || !!busy} className="rounded-full border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40" data-testid="import-check">
+          <button type="submit" disabled={!file || !!busy} className="rounded-full border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40" data-testid="import-check">
             {busy === "check" ? "Checking…" : "Check file"}
           </button>
           <button type="button" disabled={!canImport || !!busy} onClick={() => send(false)} className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-40" data-testid="import-save">
@@ -201,7 +215,7 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
           <div className="mt-4 space-y-3 text-sm" data-testid="import-result">
             <p>
               <strong>{result.totalRecords}</strong> row(s): <strong>{result.validCount}</strong> ready, <strong className={result.errorCount ? "text-warn" : ""}>{result.errorCount}</strong> with errors, {result.warningCount} warning(s).
-              {result.replacesExisting && " This replaces the earlier import with the same name."}
+              {result.validCount > 0 && ` ${result.added} new, ${result.updated} update(s).`}
             </p>
             {result.errorCount > 0 && <p className="text-warn">Fix the errors in the file and check it again. A file with errors is not imported.</p>}
             {result.unknownColumns.length > 0 && <p className="text-muted">Ignored columns: {result.unknownColumns.join(", ")}</p>}
@@ -225,7 +239,7 @@ export default function ProductsAdmin({ onSignedOut }: { onSignedOut: () => void
           </div>
         )}
         <p className="mt-4 text-xs text-muted">
-          Images: use https:// links, or paths to images already on the site (for example /brands/kastamonu/textures/1-026.jpg). Uploading new image files here is not supported yet. Imports are stored on this server&apos;s disk (DATA_DIR/catalogue), which serverless hosts do not keep.
+          Images: use https:// links, paths to images already on the site (for example /brands/kastamonu/textures/1-026.jpg), or upload images on a panel&apos;s edit screen.
         </p>
       </form>
     </section>

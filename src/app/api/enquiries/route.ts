@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { EnquiryInputSchema, fieldErrors } from "@/lib/enquiries/schema";
-import { loadCatalogue } from "@/lib/server/catalogueRepository";
+import { loadPublicCatalogue } from "@/lib/server/liveCatalogue";
 import { getEnquiryStore } from "@/lib/server/enquiryStore";
 import { getMailer } from "@/lib/server/mailer";
 import { submitEnquiry } from "@/lib/server/submitEnquiry";
@@ -33,8 +33,8 @@ export async function POST(request: Request) {
   if (parsed.data.website) return NextResponse.json({ error: "The enquiry could not be accepted." }, { status: 400 });
 
   try {
-    const { products } = await loadCatalogue();
-    const enquiry = buildEnquiry(parsed.data, products);
+    const { all } = await loadPublicCatalogue();
+    const enquiry = buildEnquiry(parsed.data, all);
     const origin = new URL(request.url).origin;
     const result = await submitEnquiry(enquiry, getEnquiryStore(), getMailer(), origin);
     if (result.problems.length) console.error(`[enquiries] ${enquiry.reference}:`, result.problems.join(" | "));
