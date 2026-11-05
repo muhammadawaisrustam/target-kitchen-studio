@@ -310,13 +310,12 @@ await check("Admin: sign in, see the enquiry, change status, export CSV", async 
   return "HttpOnly SameSite=Strict cookie; status saved to the server file; CSV export has the enquiry; cross-site change refused (403)";
 });
 
-await check("Admin: product import is checked first, errors block it, clean file goes live and can be removed", async () => {
+await check("Admin: product import is checked first, errors block it, clean file goes live and can be deleted", async () => {
   await page.click("[data-testid=admin-tab-products]");
   await page.waitForSelector("[data-testid=catalogue-sources]");
   const header = "id,panelCode,productName,category,colourFamily,finish,brand,board,textureUrl,thumbnailUrl,colourHex,isActive,isPublished";
   const bad = `${header}\ne2e-1,1-026-T18-C-J-1,Clash,Woodgrains,Beige,Matt,E2E,MDF,,,#ffffff,true,true\ne2e-2,,No code,Plain,White,Matt,E2E,MDF,,,#ffffff,true,true`;
   const good = `${header}\ne2e-1,E2E-001,E2E Test Walnut,Woodgrains,Brown,Matt,E2E Brand,MDF,/brands/kastamonu/textures/1-668.jpg,/brands/kastamonu/thumbs/1-668.jpg,,true,true\ne2e-2,E2E-002,E2E Test White,Uni colors,White,Matt,E2E Brand,MDF,,,#F4F4F0,true,true`;
-  await page.fill("[data-testid=import-label]", "E2E brand");
   await page.setInputFiles("[data-testid=import-file]", { name: "bad.csv", mimeType: "text/csv", buffer: Buffer.from(bad) });
   await page.click("[data-testid=import-check]");
   await page.waitForSelector("[data-testid=import-errors]");
@@ -328,14 +327,13 @@ await check("Admin: product import is checked first, errors block it, clean file
   await page.waitForSelector("[data-testid=import-done]");
   const live = await page.evaluate(() => fetch("/api/catalogue?q=E2E-001").then((r) => r.json()));
   assert(live.items.length === 1 && live.items[0].productName === "E2E Test Walnut", JSON.stringify(live).slice(0, 200));
-  assert(fs.existsSync(path.join(DATA, "catalogue", "e2e-brand.json")), "file not written");
+  assert(fs.readFileSync(path.join(DATA, "catalogue-admin.json"), "utf8").includes("E2E-001"), "edits file not written");
   await page.screenshot({ path: `${OUT}/s3-06-admin-import.png`, fullPage: true });
-  await page.click("[data-testid=remove-e2e-brand]");
-  await page.click("[data-testid=confirm-remove-e2e-brand]");
-  await page.waitForSelector("[data-testid=import-done]:has-text('Removed')");
+  const del = await page.evaluate(() => fetch("/api/admin/products/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: ["e2e-1", "e2e-2"], action: "delete" }) }).then((r) => r.json()));
+  assert(del.changed === 2, JSON.stringify(del));
   const gone = await page.evaluate(() => fetch("/api/catalogue?q=E2E-001").then((r) => r.json()));
   assert(gone.items.length === 0, "still live after removal");
-  return "file with a duplicate code and a missing code was blocked; clean file imported 2 products, then removed";
+  return "file with a duplicate code and a missing code was blocked; clean file imported 2 products, then deleted";
 });
 
 await check("Admin: sign out ends access", async () => {
